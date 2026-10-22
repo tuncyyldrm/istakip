@@ -16,6 +16,7 @@ export async function GET() {
       activeOrderTitle: r.active_order_title,
       totalHours: Number(r.total_hours) || 0,
       notes: r.notes || '',
+      image: r.image || null,
       updatedAt: r.updated_at
     }));
     return NextResponse.json({ success: true, data: printers });
@@ -37,15 +38,16 @@ export async function POST(request) {
     const activeOrderTitle = body.activeOrderTitle || '';
     const totalHours = Number(body.totalHours) || 0;
     const notes = body.notes || '';
+    const image = body.image || null;
     const updatedAt = new Date().toISOString();
 
     await db.execute({
-      sql: `INSERT INTO printers (id, name, model, status, nozzle_size, current_filament, active_order_title, total_hours, notes, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, name, model, status, nozzleSize, currentFilament, activeOrderTitle, totalHours, notes, updatedAt]
+      sql: `INSERT INTO printers (id, name, model, status, nozzle_size, current_filament, active_order_title, total_hours, notes, image, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [id, name, model, status, nozzleSize, currentFilament, activeOrderTitle, totalHours, notes, image, updatedAt]
     });
 
-    const newPrinter = { id, name, model, status, nozzleSize, currentFilament, activeOrderTitle, totalHours, notes, updatedAt };
+    const newPrinter = { id, name, model, status, nozzleSize, currentFilament, activeOrderTitle, totalHours, notes, image, updatedAt };
     return NextResponse.json({ success: true, data: newPrinter }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

@@ -81,6 +81,7 @@ export async function GET() {
       activeOrderTitle: r.active_order_title,
       totalHours: Number(r.total_hours) || 0,
       notes: r.notes,
+      image: r.image || null,
       updatedAt: r.updated_at
     }));
 
@@ -98,6 +99,7 @@ export async function GET() {
       unitPrice: Number(r.unit_price) || 0,
       location: r.location,
       notes: r.notes,
+      image: r.image || null,
       updatedAt: r.updated_at
     }));
 

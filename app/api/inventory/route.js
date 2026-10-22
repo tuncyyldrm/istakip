@@ -19,6 +19,7 @@ export async function GET() {
       unitPrice: Number(r.unit_price) || 0,
       location: r.location || '',
       notes: r.notes || '',
+      image: r.image || null,
       updatedAt: r.updated_at
     }));
     return NextResponse.json({ success: true, data: items });
@@ -43,15 +44,16 @@ export async function POST(request) {
     const unitPrice = Number(body.unitPrice) || 0;
     const location = body.location || '';
     const notes = body.notes || '';
+    const image = body.image || null;
     const updatedAt = new Date().toISOString();
 
     await db.execute({
-      sql: `INSERT INTO inventory_items (id, category, name, brand, material, color, quantity, unit, min_threshold, unit_price, location, notes, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, category, name, brand, material, color, quantity, unit, minThreshold, unitPrice, location, notes, updatedAt]
+      sql: `INSERT INTO inventory_items (id, category, name, brand, material, color, quantity, unit, min_threshold, unit_price, location, notes, image, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [id, category, name, brand, material, color, quantity, unit, minThreshold, unitPrice, location, notes, image, updatedAt]
     });
 
-    const newItem = { id, category, name, brand, material, color, quantity, unit, minThreshold, unitPrice, location, notes, updatedAt };
+    const newItem = { id, category, name, brand, material, color, quantity, unit, minThreshold, unitPrice, location, notes, image, updatedAt };
     return NextResponse.json({ success: true, data: newItem }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

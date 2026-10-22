@@ -19,6 +19,7 @@ export async function PUT(request, { params }) {
               active_order_title = COALESCE(?, active_order_title),
               total_hours = COALESCE(?, total_hours),
               notes = COALESCE(?, notes),
+              image = COALESCE(?, image),
               updated_at = ?
             WHERE id = ?`,
       args: [
@@ -30,6 +31,7 @@ export async function PUT(request, { params }) {
         body.activeOrderTitle,
         body.totalHours !== undefined ? Number(body.totalHours) : null,
         body.notes,
+        body.image !== undefined ? body.image : null,
         updatedAt,
         id
       ]
@@ -49,6 +51,7 @@ export async function PUT(request, { params }) {
       activeOrderTitle: r.active_order_title,
       totalHours: Number(r.total_hours) || 0,
       notes: r.notes,
+      image: r.image || null,
       updatedAt: r.updated_at
     };
 
@@ -72,6 +75,7 @@ export async function PATCH(request, { params }) {
               nozzle_size = COALESCE(?, nozzle_size),
               current_filament = COALESCE(?, current_filament),
               active_order_title = COALESCE(?, active_order_title),
+              image = COALESCE(?, image),
               updated_at = ?
             WHERE id = ?`,
       args: [
@@ -79,6 +83,7 @@ export async function PATCH(request, { params }) {
         body.nozzleSize || null,
         body.currentFilament || null,
         body.activeOrderTitle !== undefined ? body.activeOrderTitle : null,
+        body.image !== undefined ? body.image : null,
         updatedAt,
         id
       ]
@@ -98,6 +103,7 @@ export async function PATCH(request, { params }) {
       activeOrderTitle: r.active_order_title,
       totalHours: Number(r.total_hours) || 0,
       notes: r.notes,
+      image: r.image || null,
       updatedAt: r.updated_at
     };
 
@@ -105,6 +111,17 @@ export async function PATCH(request, { params }) {
       success: true,
       data: updated
     });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    await initDatabase();
+    const { id } = await params;
+    await db.execute({ sql: "DELETE FROM printers WHERE id = ?;", args: [id] });
+    return NextResponse.json({ success: true, message: "Yazıcı başarıyla silindi" });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

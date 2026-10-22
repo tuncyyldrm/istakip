@@ -172,7 +172,7 @@ export default function Navbar({
 
           <div className="space-y-1.5">
             {printers.length > 0 ? (
-              printers.slice(0, 2).map((p) => {
+              printers.slice(0, 4).map((p) => {
                 const isPrinting = p.status === 'Baskıda';
                 const isIdle = p.status === 'Boşta';
                 return (

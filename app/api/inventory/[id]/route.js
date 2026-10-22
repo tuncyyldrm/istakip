@@ -22,6 +22,7 @@ export async function PUT(request, { params }) {
               unit_price = COALESCE(?, unit_price),
               location = COALESCE(?, location),
               notes = COALESCE(?, notes),
+              image = COALESCE(?, image),
               updated_at = ?
             WHERE id = ?`,
       args: [
@@ -36,6 +37,7 @@ export async function PUT(request, { params }) {
         body.unitPrice !== undefined ? Number(body.unitPrice) : null,
         body.location,
         body.notes,
+        body.image !== undefined ? body.image : null,
         updatedAt,
         id
       ]
@@ -58,6 +60,7 @@ export async function PUT(request, { params }) {
       unitPrice: Number(r.unit_price) || 0,
       location: r.location,
       notes: r.notes,
+      image: r.image || null,
       updatedAt: r.updated_at
     };
 

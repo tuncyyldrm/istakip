@@ -112,11 +112,15 @@ export default function Dashboard({
                   className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 hover:border-orange-500/40 cursor-pointer transition flex items-center justify-between gap-3 group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      isPrinting ? 'bg-amber-500/15 text-amber-500' : isIdle ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500'
-                    }`}>
-                      <Printer className="w-4 h-4" />
-                    </div>
+                    {printer.image ? (
+                      <img src={printer.image} alt={printer.name} className="w-8 h-8 rounded-lg object-cover border border-slate-300 dark:border-slate-700 shrink-0" />
+                    ) : (
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        isPrinting ? 'bg-amber-500/15 text-amber-500' : isIdle ? 'bg-emerald-500/15 text-emerald-500' : 'bg-rose-500/15 text-rose-500'
+                      }`}>
+                        <Printer className="w-4 h-4" />
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
                         {printer.name}

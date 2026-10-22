@@ -36,8 +36,10 @@ import {
   adjustInventoryQuantity,
   deleteInventoryItem,
   fetchPrinters,
+  createPrinter,
   updatePrinter,
-  patchPrinter
+  patchPrinter,
+  deletePrinter
 } from '@/lib/api';
 
 export default function Home() {
@@ -409,6 +411,18 @@ export default function Home() {
     }
   }
 
+  async function handleCreatePrinter(printerData) {
+    try {
+      const res = await createPrinter(printerData);
+      if (res.success) {
+        setPrinters([...printers, res.data]);
+        refreshDashboard();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   async function handleUpdatePrinter(id, printerData) {
     try {
       const res = await updatePrinter(id, printerData);
@@ -425,6 +439,19 @@ export default function Home() {
       const res = await patchPrinter(id, patchData);
       if (res.success) {
         setPrinters(printers.map(p => p.id === id ? { ...p, ...res.data } : p));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleDeletePrinter(id) {
+    if (!window.confirm('Bu 3D yazıcıyı sistemden silmek istediğinize emin misiniz?')) return;
+    try {
+      const res = await deletePrinter(id);
+      if (res.success) {
+        setPrinters(printers.filter(p => p.id !== id));
+        refreshDashboard();
       }
     } catch (err) {
       console.error(err);
@@ -501,8 +528,10 @@ export default function Home() {
               <InventoryView
                 printers={printers}
                 inventory={inventory}
+                onCreatePrinter={handleCreatePrinter}
                 onUpdatePrinter={handleUpdatePrinter}
                 onPatchPrinter={handlePatchPrinter}
+                onDeletePrinter={handleDeletePrinter}
                 onCreateItem={handleCreateInventoryItem}
                 onUpdateItem={handleUpdateInventoryItem}
                 onAdjustQuantity={handleAdjustInventoryQuantity}
