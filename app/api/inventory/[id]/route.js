@@ -91,13 +91,25 @@ export async function PATCH(request, { params }) {
     const r = res.rows[0];
     if (!r) return NextResponse.json({ success: false, message: "Item not found" }, { status: 404 });
 
+    const updated = {
+      id: r.id,
+      category: r.category,
+      name: r.name,
+      brand: r.brand,
+      material: r.material,
+      color: r.color,
+      quantity: Number(r.quantity) || 0,
+      unit: r.unit,
+      minThreshold: Number(r.min_threshold) || 0,
+      unitPrice: Number(r.unit_price) || 0,
+      location: r.location,
+      notes: r.notes,
+      updatedAt: r.updated_at
+    };
+
     return NextResponse.json({ 
       success: true, 
-      data: {
-        id: r.id,
-        quantity: Number(r.quantity) || 0,
-        updatedAt: r.updated_at
-      }
+      data: updated
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

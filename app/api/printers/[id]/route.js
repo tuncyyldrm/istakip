@@ -88,17 +88,22 @@ export async function PATCH(request, { params }) {
     const r = res.rows[0];
     if (!r) return NextResponse.json({ success: false, message: "Printer not found" }, { status: 404 });
 
+    const updated = {
+      id: r.id,
+      name: r.name,
+      model: r.model,
+      status: r.status,
+      nozzleSize: r.nozzle_size,
+      currentFilament: r.current_filament,
+      activeOrderTitle: r.active_order_title,
+      totalHours: Number(r.total_hours) || 0,
+      notes: r.notes,
+      updatedAt: r.updated_at
+    };
+
     return NextResponse.json({
       success: true,
-      data: {
-        id: r.id,
-        name: r.name,
-        status: r.status,
-        nozzleSize: r.nozzle_size,
-        currentFilament: r.current_filament,
-        activeOrderTitle: r.active_order_title,
-        updatedAt: r.updated_at
-      }
+      data: updated
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

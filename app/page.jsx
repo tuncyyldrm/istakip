@@ -327,7 +327,7 @@ export default function Home() {
     try {
       const res = await adjustInventoryQuantity(id, delta);
       if (res.success) {
-        setInventory(inventory.map(item => item.id === id ? res.data : item));
+        setInventory(inventory.map(item => item.id === id ? { ...item, ...res.data } : item));
       }
     } catch (err) {
       console.error(err);
@@ -351,7 +351,7 @@ export default function Home() {
     try {
       const res = await updatePrinter(id, printerData);
       if (res.success) {
-        setPrinters(printers.map(p => p.id === id ? res.data : p));
+        setPrinters(printers.map(p => p.id === id ? { ...p, ...res.data } : p));
       }
     } catch (err) {
       console.error(err);
@@ -362,7 +362,7 @@ export default function Home() {
     try {
       const res = await patchPrinter(id, patchData);
       if (res.success) {
-        setPrinters(printers.map(p => p.id === id ? res.data : p));
+        setPrinters(printers.map(p => p.id === id ? { ...p, ...res.data } : p));
       }
     } catch (err) {
       console.error(err);
