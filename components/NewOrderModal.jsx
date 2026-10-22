@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Clock } from 'lucide-react';
+import { X, Clock, UploadCloud, Trash2, Image as ImageIcon } from 'lucide-react';
 import { calculateCost } from '@/lib/api';
 
 export default function NewOrderModal({ 
@@ -23,10 +23,12 @@ export default function NewOrderModal({
     printHours: 2,
     printMinutes: 30,
     price: 180,
-    notes: ''
+    notes: '',
+    image: ''
   });
 
   const [autoCalculatePrice, setAutoCalculatePrice] = useState(false);
+  const [compressing, setCompressing] = useState(false);
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -36,7 +38,8 @@ export default function NewOrderModal({
         date: orderToEdit.date || today,
         printHours: orderToEdit.printHours || 0,
         printMinutes: orderToEdit.printMinutes || 0,
-        price: orderToEdit.price || 0
+        price: orderToEdit.price || 0,
+        image: orderToEdit.image || ''
       });
     } else if (initialValues) {
       setFormData({
@@ -50,7 +53,8 @@ export default function NewOrderModal({
         printHours: initialValues.printHours || 2,
         printMinutes: initialValues.printMinutes || 30,
         price: initialValues.price || 0,
-        notes: ''
+        notes: '',
+        image: initialValues.image || ''
       });
     } else {
       setFormData({
@@ -64,7 +68,8 @@ export default function NewOrderModal({
         printHours: 2,
         printMinutes: 30,
         price: 180,
-        notes: ''
+        notes: '',
+        image: ''
       });
     }
   }, [orderToEdit, initialValues, isOpen]);
@@ -83,6 +88,58 @@ export default function NewOrderModal({
   }, [formData.printHours, formData.printMinutes, formData.channel, autoCalculatePrice]);
 
   if (!isOpen) return null;
+
+  function handleImageChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Lütfen geçerli bir görsel dosyası seçin (PNG, JPG, WebP).');
+      return;
+    }
+
+    setCompressing(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Max 800px on either side
+        const maxDimension = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > maxDimension) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else if (height > maxDimension) {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress to WebP with 0.8 quality (~50-100 KB)
+        try {
+          const webpDataUrl = canvas.toDataURL('image/webp', 0.8);
+          setFormData(prev => ({ ...prev, image: webpDataUrl }));
+        } catch (err) {
+          const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          setFormData(prev => ({ ...prev, image: jpegDataUrl }));
+        }
+        setCompressing(false);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleRemoveImage() {
+    setFormData(prev => ({ ...prev, image: '' }));
+  }
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -167,6 +224,58 @@ export default function NewOrderModal({
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500"
             />
+          </div>
+
+          {/* Model Görseli / 3D Render Yükleme Alanı */}
+          <div>
+            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">
+              Model Görseli / 3D Render (Opsiyonel)
+            </label>
+
+            {formData.image ? (
+              <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 p-2.5 flex items-center gap-3">
+                <img
+                  src={formData.image}
+                  alt="Önizleme"
+                  className="w-14 h-14 rounded-xl object-cover border border-gray-200 dark:border-gray-600 shrink-0 shadow-sm"
+                />
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-bold text-gray-900 dark:text-white block">Görsel Yüklendi</span>
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium block">
+                    ✓ WebP olarak optimize edildi (~100 KB)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="p-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold transition"
+                  title="Görseli Kaldır"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-cyan-500 rounded-2xl p-3 flex items-center justify-center gap-2 cursor-pointer transition bg-gray-50/50 dark:bg-gray-800/30 group">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                {compressing ? (
+                  <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-cyan-400">
+                    <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                    <span>Görsel optimize ediliyor...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400">
+                    <UploadCloud className="w-4 h-4 shrink-0 text-blue-500 dark:text-cyan-400" />
+                    <span className="font-semibold">Fotoğraf veya 3D Render Yükle</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">(Otomatik 100 KB WebP)</span>
+                  </div>
+                )}
+              </label>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

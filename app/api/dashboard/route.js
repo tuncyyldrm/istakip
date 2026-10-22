@@ -21,7 +21,8 @@ export async function GET() {
       notes: r.notes,
       printHours: r.print_hours,
       printMinutes: r.print_minutes,
-      price: r.price
+      price: r.price,
+      image: r.image || null
     }));
 
     // Fetch trendyol sales

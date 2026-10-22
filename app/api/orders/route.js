@@ -19,6 +19,7 @@ export async function GET() {
       printHours: r.print_hours,
       printMinutes: r.print_minutes,
       price: r.price,
+      image: r.image || null,
       createdAt: r.created_at,
       updatedAt: r.updated_at
     }));
@@ -44,15 +45,16 @@ export async function POST(request) {
     const printHours = Number(body.printHours) || 0;
     const printMinutes = Number(body.printMinutes) || 0;
     const price = Number(body.price) || 0;
+    const image = body.image || null;
     const createdAt = new Date().toISOString();
 
     await db.execute({
-      sql: `INSERT INTO orders (id, date, channel, customer, title, description, color, status, notes, print_hours, print_minutes, price, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [id, date, channel, customer, title, description, color, status, notes, printHours, printMinutes, price, createdAt]
+      sql: `INSERT INTO orders (id, date, channel, customer, title, description, color, status, notes, print_hours, print_minutes, price, image, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [id, date, channel, customer, title, description, color, status, notes, printHours, printMinutes, price, image, createdAt]
     });
 
-    const newOrder = { id, date, channel, customer, title, description, color, status, notes, printHours, printMinutes, price, createdAt };
+    const newOrder = { id, date, channel, customer, title, description, color, status, notes, printHours, printMinutes, price, image, createdAt };
     return NextResponse.json({ success: true, data: newOrder }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

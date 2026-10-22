@@ -9,6 +9,8 @@ export async function PUT(request, { params }) {
     const body = await request.json();
 
     const updatedAt = new Date().toISOString();
+    const hasImageUpdate = body.image !== undefined ? 1 : 0;
+    const imageVal = body.image || null;
 
     await db.execute({
       sql: `UPDATE orders SET
@@ -23,6 +25,7 @@ export async function PUT(request, { params }) {
               print_hours = COALESCE(?, print_hours),
               print_minutes = COALESCE(?, print_minutes),
               price = COALESCE(?, price),
+              image = CASE WHEN ? = 1 THEN ? ELSE image END,
               updated_at = ?
             WHERE id = ?`,
       args: [
@@ -37,6 +40,8 @@ export async function PUT(request, { params }) {
         body.printHours,
         body.printMinutes,
         body.price,
+        hasImageUpdate,
+        imageVal,
         updatedAt,
         id
       ]
@@ -59,6 +64,7 @@ export async function PUT(request, { params }) {
       printHours: r.print_hours,
       printMinutes: r.print_minutes,
       price: r.price,
+      image: r.image || null,
       updatedAt: r.updated_at
     };
 

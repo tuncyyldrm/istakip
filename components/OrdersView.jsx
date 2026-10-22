@@ -10,7 +10,10 @@ import {
   Table as TableIcon, 
   Trash2, 
   Edit3, 
-  ChevronRight
+  ChevronRight,
+  Image as ImageIcon,
+  X,
+  Maximize2
 } from 'lucide-react';
 
 export default function OrdersView({ 
@@ -24,6 +27,7 @@ export default function OrdersView({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChannel, setSelectedChannel] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [previewImage, setPreviewImage] = useState(null);
 
   const channels = ['ALL', 'lokal', 'dolap', 'trendyol', 'web', 'özel'];
   const kanbanColumns = [
@@ -59,24 +63,24 @@ export default function OrdersView({
     const c = (colorStr || '').toLowerCase();
     let bg = '#6b7280';
     if (c.includes('beyaz')) bg = '#ffffff';
-    else if (c.includes('yeşil')) bg = '#22c55e';
-    else if (c.includes('kırmızı')) bg = '#ef4444';
-    else if (c.includes('turuncu')) bg = '#f97316';
-    else if (c.includes('mavi')) bg = '#3b82f6';
-    else if (c.includes('gri')) bg = '#9ca3af';
     else if (c.includes('siyah')) bg = '#111827';
+    else if (c.includes('gri')) bg = '#9ca3af';
+    else if (c.includes('kırmızı')) bg = '#ef4444';
+    else if (c.includes('mavi')) bg = '#3b82f6';
+    else if (c.includes('yeşil')) bg = '#10b981';
     else if (c.includes('sarı')) bg = '#eab308';
+    else if (c.includes('turuncu')) bg = '#f97316';
     return bg;
   };
 
   return (
     <div className="space-y-6">
-      {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm transition-colors">
+      {/* Top Header */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
         <div>
-          <div className="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-1">
             <ClipboardList className="w-3.5 h-3.5" />
-            <span>Operasyonel Takip</span>
+            <span>Google Sheets 'Sipariş' Modülü</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white">Sipariş & Üretim Yönetimi</h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -216,6 +220,26 @@ export default function OrdersView({
                             </div>
                           </div>
 
+                          {/* Model Görseli (Eğer varsa) */}
+                          {order.image && (
+                            <div 
+                              onClick={() => setPreviewImage(order.image)}
+                              className="w-full h-28 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700/60 cursor-pointer relative group/img shadow-inner"
+                              title="Görseli büyüt"
+                            >
+                              <img 
+                                src={order.image} 
+                                alt={order.title} 
+                                className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-200"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-1 text-white text-[11px] font-bold">
+                                <Maximize2 className="w-3.5 h-3.5" />
+                                <span>Büyüt</span>
+                              </div>
+                            </div>
+                          )}
+
                           <div>
                             <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-cyan-300 transition">
                               {order.title}
@@ -276,7 +300,6 @@ export default function OrdersView({
                   <th className="py-3.5 px-4">Kanal</th>
                   <th className="py-3.5 px-4">Müşteri</th>
                   <th className="py-3.5 px-4">İş / Model</th>
-                  <th className="py-3.5 px-4">Açıklama</th>
                   <th className="py-3.5 px-4">Renk</th>
                   <th className="py-3.5 px-4">Durum</th>
                   <th className="py-3.5 px-4">Fiyat</th>
@@ -286,7 +309,7 @@ export default function OrdersView({
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan="10" className="py-8 text-center text-gray-400 dark:text-gray-500 text-xs">
+                    <td colSpan="9" className="py-8 text-center text-gray-400 dark:text-gray-500 text-xs">
                       Kriterlere uygun sipariş bulunamadı.
                     </td>
                   </tr>
@@ -308,10 +331,27 @@ export default function OrdersView({
                         {order.customer || '-'}
                       </td>
                       <td className="py-3 px-4 font-bold text-gray-900 dark:text-white">
-                        {order.title}
-                      </td>
-                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                        {order.description}
+                        <div className="flex items-center gap-2.5">
+                          {order.image ? (
+                            <img
+                              src={order.image}
+                              alt={order.title}
+                              onClick={() => setPreviewImage(order.image)}
+                              className="w-10 h-10 rounded-xl object-cover border border-gray-200 dark:border-gray-700 cursor-pointer hover:scale-110 transition-transform shrink-0 shadow-sm"
+                              title="Görseli büyüt"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 shrink-0">
+                              <ImageIcon className="w-4 h-4" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <span className="block truncate">{order.title}</span>
+                            {order.description && (
+                              <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal block truncate max-w-xs">{order.description}</span>
+                            )}
+                          </div>
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
@@ -361,6 +401,29 @@ export default function OrdersView({
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Büyük Görsel Önizleme Modalı (Lightbox) */}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn cursor-pointer"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-2xl max-h-[85vh] bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 p-3" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-5 right-5 bg-black/60 hover:bg-black text-white p-2 rounded-full transition z-10"
+              title="Kapat"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img 
+              src={previewImage} 
+              alt="Büyük Önizleme" 
+              className="max-h-[80vh] w-auto max-w-full rounded-2xl object-contain mx-auto shadow-lg" 
+            />
           </div>
         </div>
       )}

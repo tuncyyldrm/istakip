@@ -301,8 +301,19 @@ export default function Dashboard({
                     return (
                       <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition">
                         <td className="py-2.5 font-semibold text-gray-900 dark:text-white">
-                          <div>{order.title}</div>
-                          <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate max-w-[140px] font-normal">{order.description}</div>
+                          <div className="flex items-center gap-2">
+                            {order.image && (
+                              <img
+                                src={order.image}
+                                alt={order.title}
+                                className="w-8 h-8 rounded-lg object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+                              />
+                            )}
+                            <div className="min-w-0">
+                              <div className="truncate">{order.title}</div>
+                              <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate max-w-[140px] font-normal">{order.description}</div>
+                            </div>
+                          </div>
                         </td>
                         <td className="py-2.5">
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
