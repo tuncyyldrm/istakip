@@ -173,7 +173,7 @@ export default function NewSaleModal({
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-gray-600 dark:text-gray-400 block mb-1">Arkadaş Sabit Payı (₺)</label>
+                  <label className="text-[11px] text-gray-600 dark:text-gray-400 block mb-1">İş Ortağı Sabit Payı (₺)</label>
                   <input
                     type="number"
                     step="0.01"

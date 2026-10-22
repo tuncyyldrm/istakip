@@ -16,7 +16,7 @@ Google E-Tablolar'daki **"3D baskı"** projesinin tüm sayfaları, formülleri v
 3. **Google Sheets Veri ve Formül Bütünlüğü:**
    - **`Sipariş` Sayfası:** Kanban ve Tablo görünümleri, renk rozetleri, aşama yönetimi.
    - **`tanımlar` Sayfası:** Anycubic Kobra 2 Plus saatlik maliyet motoru (27 ₺/saat), kademeli çarpan kuralı, Trendyol fiyat formülü, çoklu parça montaj süre toplayıcı.
-   - **`trendyol satış` Sayfası:** Net hakediş, net KDV borcu, gelir vergisi (%20), arkadaş toplam payı, sizin kalan alacağınız ve net kârınız.
+   - **`trendyol satış` Sayfası:** Net hakediş, net KDV borcu, gelir vergisi (%20), iş ortağı payı, sizin kalan alacağınız ve net kârınız.
    - **`Nakit Kasa` Sayfası:** 200, 100, 50, 20, 10, 5 TL kupür sayımı ve kasa mevcudu.
    - **`ayarlar` Sayfası:** Kategori ve kanal yönetimi.
 

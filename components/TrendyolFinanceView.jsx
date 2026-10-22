@@ -76,10 +76,10 @@ export default function TrendyolFinanceView({
           </p>
         </div>
 
-        {/* Card 2: Partner / Friend Share */}
+        {/* Card 2: Partner Share */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm transition-colors">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-            <span>Arkadaş Toplam Payı (O Sütunu)</span>
+            <span>İş Ortağı Payı (O Sütunu)</span>
             <span className="text-[10px] bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded font-mono font-semibold">
               Vergi + Pay
             </span>
@@ -111,7 +111,7 @@ export default function TrendyolFinanceView({
             <span className="text-base font-bold text-emerald-600/80 dark:text-emerald-400/80">₺</span>
           </div>
           <p className="text-[11px] text-emerald-700/80 dark:text-gray-400 mt-2">
-            Hakedişten arkadaş payı ve kesintiler düşüldükten sonra kalan
+            Hakedişten iş ortağı payı ve kesintiler düşüldükten sonra kalan
           </p>
         </div>
 
@@ -169,7 +169,7 @@ export default function TrendyolFinanceView({
                 <th className="py-3 px-3 text-blue-600 dark:text-blue-400 font-bold">Hakediş (L)</th>
                 <th className="py-3 px-3 text-purple-600 dark:text-purple-400 font-bold">Net KDV Borcu (M)</th>
                 <th className="py-3 px-3 text-purple-600 dark:text-purple-400 font-bold">Gelir Vergisi (N)</th>
-                <th className="py-3 px-3 text-purple-600 dark:text-purple-400 font-extrabold">Arkadaş Toplam Payı (O)</th>
+                <th className="py-3 px-3 text-purple-600 dark:text-purple-400 font-extrabold">İş Ortağı Payı (O)</th>
                 <th className="py-3 px-3 text-emerald-600 dark:text-emerald-400 font-extrabold">Sizin Alacağınız (P)</th>
                 <th className="py-3 px-3 text-cyan-600 dark:text-cyan-400 font-extrabold">Kendi Kârınız (Q)</th>
                 <th className="py-3 px-3 text-right">İşlemler</th>
