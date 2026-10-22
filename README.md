@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 3D Baskı İş Takip, Maliyet & Finans Yönetim Sistemi (Next.js + Turso)
 
-## Getting Started
+Google E-Tablolar'daki **"3D baskı"** projesinin tüm sayfaları, formülleri ve matematiksel kurallarıyla baştan aşağı **Next.js (App Router)** ve **Turso (Serverless SQLite)** mimarisiyle yeniden inşa edilmiş profesyonel versiyonu.
 
-First, run the development server:
+---
 
+## 🌟 Öne Çıkan Özellikler
+
+1. **Vercel & Mobil İçin Kusursuz Mimari:**
+   - Next.js 16 App Router ve Tailwind CSS v4 ile geliştirildi.
+   - Masaüstü, tablet ve cep telefonlarından tam uyumlu çalışır.
+   - Vercel'e sıfır yapılandırmayla (*zero-config*) doğrudan deploy edilir.
+2. **Turso (Serverless SQLite) Veritabanı:**
+   - Yerelde hiçbir ayar yapmadan `data/local.db` üzerinde çalışır.
+   - Canlıda (Vercel) Turso Cloud URL ve Token'ı ile bulut veritabanına bağlanır; verileriniz asla silinmez.
+3. **Google Sheets Veri ve Formül Bütünlüğü:**
+   - **`Sipariş` Sayfası:** Kanban ve Tablo görünümleri, renk rozetleri, aşama yönetimi.
+   - **`tanımlar` Sayfası:** Anycubic Kobra 2 Plus saatlik maliyet motoru (27 ₺/saat), kademeli çarpan kuralı, Trendyol fiyat formülü, çoklu parça montaj süre toplayıcı.
+   - **`trendyol satış` Sayfası:** Net hakediş, net KDV borcu, gelir vergisi (%20), arkadaş toplam payı, sizin kalan alacağınız ve net kârınız.
+   - **`Nakit Kasa` Sayfası:** 200, 100, 50, 20, 10, 5 TL kupür sayımı ve kasa mevcudu.
+   - **`ayarlar` Sayfası:** Kategori ve kanal yönetimi.
+
+---
+
+## 🚀 Yerel Olarak Çalıştırma
+
+### 1. Kolay Başlatma (Windows)
+Klasördeki **[`baslat.bat`](file:///c:/Users/Administrator/proje/istakip/baslat.bat)** dosyasına çift tıklayın. Otomatik olarak sunucuyu çalıştırıp tarayıcınızda açacaktır:
+👉 **`http://localhost:3001`**
+
+*(Aynı yerel ağdaki telefonunuzdan girmek için ağ adresini kullanabilirsiniz: `http://192.168.1.65:3001`)*
+
+### 2. Komut Satırından Başlatma
 ```bash
+# Canlı modu başlat
+npm start
+
+# Geliştirici modunu başlat
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 🌐 GitHub ve Vercel İle Canlıya Alma Rehberi (0 TL Maliyet)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Adım 1: GitHub Reposu Oluşturma
+Terminalde şu komutları çalıştırarak projenizi GitHub'a gönderin:
+```bash
+git add .
+git commit -m "feat: 3D baskı iş takip sistemi (Next.js + Turso)"
+git branch -M main
+git remote add origin https://github.com/KULLANICI_ADINIZ/istakip.git
+git push -u origin main
+```
 
-## Learn More
+### Adım 2: Turso'da Ücretsiz Veritabanı Açma (1 Dakika)
+1. [turso.tech](https://turso.tech) sitesine gidip GitHub ile ücretsiz giriş yapın.
+2. **Create Database** butonuna basıp veritabanınıza bir isim verin (örn: `istakip-db`).
+3. Size verilen **Database URL** (`libsql://...`) ve **Auth Token** değerlerini kopyalayın.
 
-To learn more about Next.js, take a look at the following resources:
+### Adım 3: Vercel'e Canlıya Alma (1 Tık)
+1. [vercel.com](https://vercel.com) sitesine gidip GitHub ile giriş yapın.
+2. **Add New... $\rightarrow$ Project** seçip `istakip` reponuzu seçin.
+3. **Environment Variables** bölümüne Turso'dan aldığınız 2 değeri ekleyin:
+   - `TURSO_DATABASE_URL` = `libsql://istakip-db-...turso.io`
+   - `TURSO_AUTH_TOKEN` = `eyJhbGci...`
+4. **Deploy** butonuna basın!
+5. 1 dakika içinde size özel ücretsiz bir linkiniz olacak (örn: `https://istakip-baski.vercel.app`).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Tebrikler! Artık dünyanın her yerinden cebinizden veya bilgisayarınızdan kendi atölye takip sisteminizi kullanabilirsiniz.
