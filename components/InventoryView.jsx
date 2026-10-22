@@ -150,16 +150,16 @@ export default function InventoryView({
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
         <div>
-          <div className="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400 text-xs font-bold uppercase tracking-wider mb-1">
             <Package className="w-3.5 h-3.5" />
             <span>Atölye Envanter & Donanım Modülü</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Envanter, Stok & Cihaz Yönetimi
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             2 adet 3D yazıcınızın canlı durumu, filament makaraları, paketleme ve atölye sarf malzemeleri.
           </p>
         </div>
@@ -167,16 +167,16 @@ export default function InventoryView({
         <div className="flex items-center gap-2">
           <button
             onClick={() => openCreateModal('filament')}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-md shadow-blue-600/20 transition flex items-center gap-1.5 active:scale-95"
+            className="bg-orange-600 hover:bg-orange-500 text-white font-semibold text-xs px-3.5 py-2.5 rounded-xl shadow-md shadow-orange-600/20 transition flex items-center gap-1.5 active:scale-95"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Filament Ekle</span>
           </button>
           <button
             onClick={() => openCreateModal('packaging')}
-            className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 font-bold text-xs px-3.5 py-2.5 rounded-xl transition flex items-center gap-1.5"
+            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-semibold text-xs px-3.5 py-2.5 rounded-xl transition flex items-center gap-1.5"
           >
-            <Box className="w-4 h-4 text-amber-500" />
+            <Box className="w-4 h-4 text-orange-500" />
             <span>Sarf / Koli Ekle</span>
           </button>
         </div>

@@ -130,23 +130,23 @@ export default function CostCalculatorView({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
         <div>
-          <div className="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400 text-xs font-bold uppercase tracking-wider mb-1">
             <Calculator className="w-3.5 h-3.5" />
-            <span>Google Sheets 'tanımlar' Motoru</span>
+            <span>3D Atölye Hassas Maliyet & Fiyat Motoru</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">3D Baskı Maliyet & Akıllı Fiyatlandırma</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">3D Baskı Maliyet & Akıllı Fiyatlandırma</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Süreye dayalı üretim maliyeti, kademeli çarpan kuralı ve pazaryeri komisyon/KDV hesapları.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/80 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700">
-          <Cpu className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+          <Cpu className="w-4 h-4 text-orange-500" />
           <div className="text-xs">
-            <span className="text-gray-500 dark:text-gray-400">Aktif Saat Maliyeti:</span>{' '}
-            <strong className="text-emerald-600 dark:text-emerald-400 text-sm">{settings?.hourlyBaseCost || 27} ₺ / sa</strong>
+            <span className="text-slate-500 dark:text-slate-400">Aktif Saat Maliyeti:</span>{' '}
+            <strong className="text-orange-600 dark:text-orange-400 font-mono text-sm">{settings?.hourlyBaseCost || 27} ₺ / sa</strong>
           </div>
         </div>
       </div>
@@ -228,7 +228,7 @@ export default function CostCalculatorView({
               printMinutes: minutes,
               price: calcResult?.localPrice || 0
             })}
-            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold text-sm py-3 rounded-xl shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2 active:scale-98"
+            className="w-full bg-orange-600 hover:bg-orange-500 text-white font-semibold text-sm py-3 rounded-xl shadow-md shadow-orange-600/25 transition flex items-center justify-center gap-2 active:scale-98"
           >
             <span>Bu Hesaplamayla Sipariş Oluştur</span>
             <ArrowRight className="w-4 h-4" />

@@ -391,7 +391,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f19] text-gray-900 dark:text-gray-100 flex flex-col selection:bg-cyan-500 selection:text-white transition-colors duration-200">
-      {/* Top Navbar */}
+      {/* Top Navbar & Sidebar */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -400,25 +400,30 @@ export default function Home() {
         theme={theme}
         toggleTheme={toggleTheme}
         onLogout={handleLogout}
+        orders={orders}
+        printers={printers}
+        inventory={inventory}
       />
 
       {/* Main Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-            <div className="w-10 h-10 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
-            <span className="text-xs text-gray-500 dark:text-gray-400">Atölye verileri yükleniyor...</span>
-          </div>
-        ) : (
-          <>
-            {activeTab === 'dashboard' && (
-              <Dashboard
-                dashboardData={dashboardData}
-                setActiveTab={setActiveTab}
-                onNewOrderClick={openNewOrderModal}
-                onUpdateOrderStatus={handleUpdateOrderStatus}
-              />
-            )}
+      <main className="flex-1 lg:pl-64 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-8">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+              <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Atölye verileri yükleniyor...</span>
+            </div>
+          ) : (
+            <>
+              {activeTab === 'dashboard' && (
+                <Dashboard
+                  dashboardData={dashboardData}
+                  setActiveTab={setActiveTab}
+                  onNewOrderClick={openNewOrderModal}
+                  onUpdateOrderStatus={handleUpdateOrderStatus}
+                  printers={printers}
+                />
+              )}
 
             {activeTab === 'orders' && (
               <OrdersView
@@ -477,6 +482,7 @@ export default function Home() {
             )}
           </>
         )}
+        </div>
       </main>
 
       {/* Modals */}

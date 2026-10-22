@@ -60,14 +60,14 @@ export default function CashRegisterView({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
         <div>
-          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-xs font-semibold uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider mb-1">
             <Wallet className="w-3.5 h-3.5" />
-            <span>Google Sheets 'Nakit Kasa' Modülü</span>
+            <span>Fiziki Kasa & Gün Sonu Sayımı</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Nakit Kasa & Gün Sonu Kupür Sayımı</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Nakit Kasa & Kupür Sayımı</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Elden yapılan nakit tahsilatların banknot bazlı kupür sayımı ve kasa mevcudu takibi.
           </p>
         </div>

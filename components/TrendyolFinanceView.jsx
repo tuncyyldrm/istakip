@@ -32,14 +32,14 @@ export default function TrendyolFinanceView({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
         <div>
-          <div className="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>Google Sheets 'trendyol satış' Modülü</span>
+            <span>Pazar Yeri Hakediş & Kâr Dağıtımı</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Trendyol Finans, Hakediş & Kâr Paylaşımı</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Trendyol Finans, Hakediş & Kâr Paylaşımı</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Satış gelirleri, platform komisyonları, KDV borcu, gelir vergisi ve ortaklık payı hesapları.
           </p>
         </div>
@@ -47,9 +47,9 @@ export default function TrendyolFinanceView({
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => onNewSaleClick()}
-            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 active:scale-95"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 active:scale-95"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Yeni Satış / Masraf Ekle</span>
           </button>
         </div>
