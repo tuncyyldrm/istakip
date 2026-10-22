@@ -14,6 +14,7 @@ import NewSaleModal from '@/components/NewSaleModal';
 import LoginScreen from '@/components/LoginScreen';
 
 import {
+  fetchBootstrap,
   fetchDashboard,
   fetchOrders,
   createOrder,
@@ -74,7 +75,28 @@ export default function Home() {
       document.documentElement.classList.remove('dark');
     }
 
-    // 2. Initialize Authentication
+    // 2. Pre-fill from local cache immediately (0 ms instantaneous render)
+    try {
+      const cached = localStorage.getItem('istakip_cache_bootstrap');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.dashboard) setDashboardData(parsed.dashboard);
+        if (parsed.orders) setOrders(parsed.orders);
+        if (parsed.sales) setSales(parsed.sales);
+        if (parsed.cashSessions) setCashSessions(parsed.cashSessions);
+        if (parsed.settings) setSettings(parsed.settings);
+        if (parsed.printers) setPrinters(parsed.printers);
+        if (parsed.inventory) setInventory(parsed.inventory);
+        // Instant visual feedback without blocking
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+    } catch (e) {
+      setLoading(true);
+    }
+
+    // 3. Initialize Authentication & Background Revalidation
     const token = localStorage.getItem('istakip_auth_token');
     if (token) {
       setIsAuthenticated(true);
@@ -103,29 +125,49 @@ export default function Home() {
 
   function handleLogout() {
     localStorage.removeItem('istakip_auth_token');
+    localStorage.removeItem('istakip_cache_bootstrap');
     setIsAuthenticated(false);
   }
 
   async function loadAllData() {
-    setLoading(true);
     try {
-      const [dashRes, ordRes, salesRes, cashRes, setRes, invRes, printRes] = await Promise.all([
-        fetchDashboard(),
-        fetchOrders(),
-        fetchTrendyolSales(),
-        fetchCashRegister(),
-        fetchSettings(),
-        fetchInventory(),
-        fetchPrinters()
-      ]);
+      // 1-step batched bootstrap fetch: 1 single network call instead of 7
+      const bootRes = await fetchBootstrap();
+      if (bootRes && bootRes.success && bootRes.data) {
+        const d = bootRes.data;
+        if (d.dashboard) setDashboardData(d.dashboard);
+        if (d.orders) setOrders(d.orders || []);
+        if (d.sales) setSales(d.sales || []);
+        if (d.cashSessions) setCashSessions(d.cashSessions || []);
+        if (d.settings) setSettings(d.settings || {});
+        if (d.printers) setPrinters(d.printers || []);
+        if (d.inventory) setInventory(d.inventory || []);
 
-      if (dashRes.success) setDashboardData(dashRes.data);
-      if (ordRes.success) setOrders(ordRes.data || []);
-      if (salesRes.success) setSales(salesRes.data || []);
-      if (cashRes.success) setCashSessions(cashRes.data || []);
-      if (setRes.success) setSettings(setRes.data || {});
-      if (invRes.success) setInventory(invRes.data || []);
-      if (printRes.success) setPrinters(printRes.data || []);
+        try {
+          localStorage.setItem('istakip_cache_bootstrap', JSON.stringify(d));
+        } catch (e) {
+          // ignore storage quota
+        }
+      } else {
+        // Fallback to legacy parallel fetches if bootstrap endpoint fails
+        const [dashRes, ordRes, salesRes, cashRes, setRes, invRes, printRes] = await Promise.all([
+          fetchDashboard(),
+          fetchOrders(),
+          fetchTrendyolSales(),
+          fetchCashRegister(),
+          fetchSettings(),
+          fetchInventory(),
+          fetchPrinters()
+        ]);
+
+        if (dashRes.success) setDashboardData(dashRes.data);
+        if (ordRes.success) setOrders(ordRes.data || []);
+        if (salesRes.success) setSales(salesRes.data || []);
+        if (cashRes.success) setCashSessions(cashRes.data || []);
+        if (setRes.success) setSettings(setRes.data || {});
+        if (invRes.success) setInventory(invRes.data || []);
+        if (printRes.success) setPrinters(printRes.data || []);
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -141,6 +183,26 @@ export default function Home() {
       console.error(err);
     }
   }
+
+  // Keep local cache in sync whenever data updates
+  useEffect(() => {
+    if (orders.length > 0 || inventory.length > 0) {
+      try {
+        const currentData = {
+          dashboard: dashboardData,
+          orders,
+          sales,
+          cashSessions,
+          settings,
+          printers,
+          inventory
+        };
+        localStorage.setItem('istakip_cache_bootstrap', JSON.stringify(currentData));
+      } catch (e) {
+        // storage quota safety
+      }
+    }
+  }, [dashboardData, orders, sales, cashSessions, settings, printers, inventory]);
 
   // -----------------------------------------------------------
   // ORDER ACTIONS
