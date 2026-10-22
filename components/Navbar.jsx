@@ -13,7 +13,8 @@ import {
   Sparkles, 
   Sun, 
   Moon, 
-  LogOut 
+  LogOut,
+  Package 
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -28,6 +29,7 @@ export default function Navbar({
   const navItems = [
     { id: 'dashboard', label: 'Genel Bakış', icon: LayoutDashboard },
     { id: 'orders', label: 'Sipariş & Üretim', icon: ClipboardList },
+    { id: 'inventory', label: 'Envanter & Stok', icon: Package },
     { id: 'calculator', label: 'Maliyet & Fiyat', icon: Calculator },
     { id: 'trendyol', label: 'Trendyol Finans', icon: TrendingUp },
     { id: 'cash', label: 'Nakit Kasa', icon: Wallet },
@@ -67,7 +69,7 @@ export default function Navbar({
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center space-x-1.5 xl:space-x-2 px-2.5 xl:px-3.5 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold whitespace-nowrap shrink-0 transition-all ${
+                  className={`flex items-center space-x-1 xl:space-x-1.5 px-2 xl:px-3 py-1.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold whitespace-nowrap shrink-0 transition-all ${
                     isActive
                       ? 'bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-cyan-400 border border-blue-200 dark:border-blue-500/30 shadow-sm'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800/60'

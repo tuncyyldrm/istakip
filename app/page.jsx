@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Dashboard from '@/components/Dashboard';
 import OrdersView from '@/components/OrdersView';
+import InventoryView from '@/components/InventoryView';
 import CostCalculatorView from '@/components/CostCalculatorView';
 import TrendyolFinanceView from '@/components/TrendyolFinanceView';
 import CashRegisterView from '@/components/CashRegisterView';
@@ -27,7 +28,15 @@ import {
   fetchCashRegister,
   createCashSession,
   deleteCashSession,
-  fetchSettings
+  fetchSettings,
+  fetchInventory,
+  createInventoryItem,
+  updateInventoryItem,
+  adjustInventoryQuantity,
+  deleteInventoryItem,
+  fetchPrinters,
+  updatePrinter,
+  patchPrinter
 } from '@/lib/api';
 
 export default function Home() {
@@ -43,6 +52,8 @@ export default function Home() {
   const [sales, setSales] = useState([]);
   const [cashSessions, setCashSessions] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [inventory, setInventory] = useState([]);
+  const [printers, setPrinters] = useState([]);
 
   // Modal states
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
@@ -98,12 +109,14 @@ export default function Home() {
   async function loadAllData() {
     setLoading(true);
     try {
-      const [dashRes, ordRes, salesRes, cashRes, setRes] = await Promise.all([
+      const [dashRes, ordRes, salesRes, cashRes, setRes, invRes, printRes] = await Promise.all([
         fetchDashboard(),
         fetchOrders(),
         fetchTrendyolSales(),
         fetchCashRegister(),
-        fetchSettings()
+        fetchSettings(),
+        fetchInventory(),
+        fetchPrinters()
       ]);
 
       if (dashRes.success) setDashboardData(dashRes.data);
@@ -111,6 +124,8 @@ export default function Home() {
       if (salesRes.success) setSales(salesRes.data || []);
       if (cashRes.success) setCashSessions(cashRes.data || []);
       if (setRes.success) setSettings(setRes.data || {});
+      if (invRes.success) setInventory(invRes.data || []);
+      if (printRes.success) setPrinters(printRes.data || []);
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {
@@ -281,6 +296,79 @@ export default function Home() {
     refreshDashboard();
   }
 
+  // -----------------------------------------------------------
+  // INVENTORY & PRINTER ACTIONS
+  // -----------------------------------------------------------
+  async function handleCreateInventoryItem(itemData) {
+    try {
+      const res = await createInventoryItem(itemData);
+      if (res.success) {
+        setInventory([res.data, ...inventory]);
+        refreshDashboard();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleUpdateInventoryItem(id, itemData) {
+    try {
+      const res = await updateInventoryItem(id, itemData);
+      if (res.success) {
+        setInventory(inventory.map(item => item.id === id ? res.data : item));
+        refreshDashboard();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleAdjustInventoryQuantity(id, delta) {
+    try {
+      const res = await adjustInventoryQuantity(id, delta);
+      if (res.success) {
+        setInventory(inventory.map(item => item.id === id ? res.data : item));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleDeleteInventoryItem(id) {
+    if (!window.confirm('Bu envanter kaydını silmek istediğinize emin misiniz?')) return;
+    try {
+      const res = await deleteInventoryItem(id);
+      if (res.success) {
+        setInventory(inventory.filter(item => item.id !== id));
+        refreshDashboard();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleUpdatePrinter(id, printerData) {
+    try {
+      const res = await updatePrinter(id, printerData);
+      if (res.success) {
+        setPrinters(printers.map(p => p.id === id ? res.data : p));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handlePatchPrinter(id, patchData) {
+    try {
+      const res = await patchPrinter(id, patchData);
+      if (res.success) {
+        setPrinters(printers.map(p => p.id === id ? res.data : p));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   // If checking authentication
   if (authChecking) {
     return (
@@ -339,6 +427,19 @@ export default function Home() {
                 onUpdateOrderStatus={handleUpdateOrderStatus}
                 onDeleteOrder={handleDeleteOrder}
                 onEditOrder={openEditOrderModal}
+              />
+            )}
+
+            {activeTab === 'inventory' && (
+              <InventoryView
+                printers={printers}
+                inventory={inventory}
+                onUpdatePrinter={handleUpdatePrinter}
+                onPatchPrinter={handlePatchPrinter}
+                onCreateItem={handleCreateInventoryItem}
+                onUpdateItem={handleUpdateInventoryItem}
+                onAdjustQuantity={handleAdjustInventoryQuantity}
+                onDeleteItem={handleDeleteInventoryItem}
               />
             )}
 
