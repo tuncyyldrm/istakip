@@ -527,7 +527,12 @@ export default function InventoryView({
                   <div className="bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Takılı Filament:</span>
                     <div className="flex items-center justify-between mt-0.5">
-                      <strong className="text-slate-900 dark:text-white font-bold truncate max-w-[110px]">{printer.currentFilament || 'Seçilmedi'}</strong>
+                      <strong 
+                        className="text-slate-900 dark:text-white font-bold truncate max-w-[140px] sm:max-w-[200px]" 
+                        title={printer.currentFilament}
+                      >
+                        {printer.currentFilament || 'Seçilmedi'}
+                      </strong>
                       <button
                         onClick={() => openEditPrinterModal(printer)}
                         className="text-[10px] text-orange-500 hover:underline"
