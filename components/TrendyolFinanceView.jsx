@@ -50,7 +50,7 @@ export default function TrendyolFinanceView({
             className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 active:scale-95"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Yeni Satış / Masraf Ekle</span>
+            <span>Yeni Satış / İade / Masraf Ekle</span>
           </button>
         </div>
       </div>
@@ -183,7 +183,7 @@ export default function TrendyolFinanceView({
                 return (
                   <tr 
                     key={row.id} 
-                    className={`transition ${!row.included ? 'opacity-40 bg-gray-50 dark:bg-gray-950/40' : 'hover:bg-gray-50 dark:hover:bg-gray-800/40'} ${isExpense ? 'bg-amber-50/60 dark:bg-amber-950/10' : ''}`}
+                    className={`transition ${!row.included ? 'opacity-40 bg-gray-50 dark:bg-gray-950/40' : 'hover:bg-gray-50 dark:hover:bg-gray-800/40'} ${isExpense ? 'bg-amber-50/60 dark:bg-amber-950/15' : ''} ${isDeduction ? 'bg-red-50/60 dark:bg-red-950/20' : ''}`}
                   >
                     <td className="py-3 px-3 text-center">
                       <button
@@ -200,23 +200,50 @@ export default function TrendyolFinanceView({
 
                     <td className="py-3 px-3 font-medium text-gray-900 dark:text-white">
                       {isExpense ? (
-                        <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
-                          <span>{row.expenseTitle || 'Masraf / Kesinti'}</span>
+                        <div>
+                          <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
+                            <span className="text-[10px] bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900/50">
+                              MASRAF
+                            </span>
+                            <span>{row.expenseTitle || 'Masraf / Kesinti'}</span>
+                          </div>
+                          {row.date && (
+                            <div className="text-[11px] text-gray-400 dark:text-gray-500 font-normal mt-0.5">
+                              {row.date}
+                            </div>
+                          )}
                         </div>
                       ) : isDeduction ? (
-                        <div className="text-red-500 dark:text-red-400 font-bold">
-                          {row.date || 'İade Kesintisi'}
+                        <div>
+                          <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-bold">
+                            <span className="text-[10px] bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded border border-red-200 dark:border-red-900/50">
+                              İADE / KESİNTİ
+                            </span>
+                            <span>{row.expenseTitle || 'İade Kesintisi'}</span>
+                          </div>
+                          {row.date && (
+                            <div className="text-[11px] text-gray-400 dark:text-gray-500 font-normal mt-0.5">
+                              {row.date}
+                            </div>
+                          )}
                         </div>
                       ) : (
-                        <div className="text-gray-800 dark:text-gray-200">
-                          {row.date || '-'}
+                        <div>
+                          <div className="text-gray-800 dark:text-gray-200 font-semibold">
+                            {row.date || '-'}
+                          </div>
+                          {row.expenseTitle && (
+                            <div className="text-[11px] text-gray-500 dark:text-gray-400 font-normal mt-0.5">
+                              {row.expenseTitle}
+                            </div>
+                          )}
                         </div>
                       )}
                     </td>
 
                     <td className="py-3 px-3 font-semibold text-gray-800 dark:text-gray-200">
                       {isDeduction ? (
-                        <span className="text-red-500 dark:text-red-400 font-bold">{row.deduction} ₺</span>
+                        <span className="text-red-600 dark:text-red-400 font-bold font-mono">{Number(row.deduction).toFixed(2)} ₺</span>
                       ) : (
                         `${row.salePrice?.toFixed(2)} ₺`
                       )}
@@ -252,7 +279,7 @@ export default function TrendyolFinanceView({
 
                     <td className="py-3 px-3 font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">
                       {isDeduction ? (
-                        <span className="text-red-500 dark:text-red-400 font-bold">{row.deduction} ₺</span>
+                        <span className="text-red-600 dark:text-red-400 font-bold font-mono">{Number(row.deduction).toFixed(2)} ₺</span>
                       ) : (
                         `${row.myReceivable?.toFixed(2)} ₺`
                       )}
@@ -260,7 +287,7 @@ export default function TrendyolFinanceView({
 
                     <td className="py-3 px-3 font-extrabold text-cyan-600 dark:text-cyan-400 text-sm">
                       {isDeduction ? (
-                        <span className="text-red-500 dark:text-red-400 font-bold">{row.deduction} ₺</span>
+                        <span className="text-red-600 dark:text-red-400 font-bold font-mono">{Number(row.deduction).toFixed(2)} ₺</span>
                       ) : (
                         `${row.myNetProfit?.toFixed(2)} ₺`
                       )}

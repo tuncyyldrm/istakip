@@ -39,8 +39,25 @@ export async function POST(request) {
   try {
     await initDatabase();
     const body = await request.json();
+
+    // Generate next sequential TS ID if not provided
+    let newId = body.id;
+    if (!newId) {
+      try {
+        const maxRes = await db.execute("SELECT id FROM trendyol_sales WHERE id LIKE 'TS-%';");
+        let maxNum = 0;
+        for (const r of maxRes.rows) {
+          const num = parseInt(String(r.id).replace("TS-", ""), 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+        newId = `TS-${String(maxNum + 1).padStart(3, "0")}`;
+      } catch (e) {
+        newId = `TS-${Date.now().toString().slice(-4)}`;
+      }
+    }
+
     const raw = {
-      id: `TS-${Date.now().toString().slice(-4)}`,
+      id: newId,
       included: body.included ?? true,
       date: body.date || new Date().toISOString().split("T")[0],
       isExpenseRow: Boolean(body.isExpenseRow),
