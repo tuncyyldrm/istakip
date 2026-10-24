@@ -68,12 +68,19 @@ export default function NewSaleModal({
         setEntryType('sale');
         setDate(saleToEdit.date || today);
         setExpenseTitle(saleToEdit.expenseTitle || '');
-        setSalePrice(String(saleToEdit.salePrice ?? 450));
-        setCommissionRate(String((Number(saleToEdit.commissionRate ?? 0.04) * 100).toFixed(1)));
-        setRealCost(String(saleToEdit.realCost ?? 55));
-        setCargoBase(String(saleToEdit.cargoBase ?? 95.54));
-        setExtraExpense(String(saleToEdit.extraExpense ?? 13.19));
-        setPartnerFixed(String(saleToEdit.partnerFixed ?? 0));
+        setSalePrice(String(saleToEdit.salePrice !== undefined && saleToEdit.salePrice !== null ? saleToEdit.salePrice : 450));
+        
+        let commPct = '4.0';
+        if (saleToEdit.commissionRate !== undefined && saleToEdit.commissionRate !== null) {
+          const rawPct = Number(saleToEdit.commissionRate) * 100;
+          commPct = rawPct % 1 === 0 ? rawPct.toFixed(1) : String(Number(rawPct.toFixed(4)));
+        }
+        setCommissionRate(commPct);
+        
+        setRealCost(String(saleToEdit.realCost !== undefined && saleToEdit.realCost !== null ? saleToEdit.realCost : 55));
+        setCargoBase(String(saleToEdit.cargoBase !== undefined && saleToEdit.cargoBase !== null ? saleToEdit.cargoBase : 89.70));
+        setExtraExpense(String(saleToEdit.extraExpense !== undefined && saleToEdit.extraExpense !== null ? saleToEdit.extraExpense : 13.19));
+        setPartnerFixed(String(saleToEdit.partnerFixed !== undefined && saleToEdit.partnerFixed !== null ? saleToEdit.partnerFixed : 0));
       }
     } else {
       // Default initial values for new entry
@@ -84,7 +91,7 @@ export default function NewSaleModal({
       setSalePrice('450');
       setCommissionRate('4.0');
       setRealCost('55');
-      setCargoBase('95.54');
+      setCargoBase('89.70');
       setExtraExpense('13.19');
       setPartnerFixed('0');
     }
@@ -164,13 +171,13 @@ export default function NewSaleModal({
         included: saleToEdit ? saleToEdit.included : true,
         date: date || new Date().toISOString().split('T')[0],
         isExpenseRow: false,
-        expenseTitle: '',
+        expenseTitle: expenseTitle.trim(),
         salePrice: parseNumeric(salePrice),
-        vatRate: 0.20,
+        vatRate: saleToEdit?.vatRate ?? 0.20,
         commissionRate: parseNumeric(commissionRate) / 100,
         realCost: parseNumeric(realCost),
         cargoBase: parseNumeric(cargoBase),
-        cargoVatRate: 0.20,
+        cargoVatRate: saleToEdit?.cargoVatRate ?? 0.20,
         extraExpense: parseNumeric(extraExpense),
         partnerFixed: parseNumeric(partnerFixed),
         deduction: 0
@@ -362,6 +369,19 @@ export default function NewSaleModal({
                     required
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  Ürün / Sipariş Açıklaması (Opsiyonel)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Örn: 3D Figür Baskı, Özel Tasarım Parça..."
+                  value={expenseTitle}
+                  onChange={(e) => setExpenseTitle(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition"
+                />
               </div>
 
               <div className="grid grid-cols-3 gap-2.5">

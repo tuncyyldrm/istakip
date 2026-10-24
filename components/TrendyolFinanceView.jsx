@@ -555,17 +555,20 @@ export default function TrendyolFinanceView({
 
                         {/* 4. Commission */}
                         <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
-                          {isExpense || isDeduction ? '-' : `%${((row.commissionRate || 0.04) * 100).toFixed(1)}`}
+                          {isExpense || isDeduction ? '-' : `%${(() => {
+                            const raw = Number(row.commissionRate ?? 0.04) * 100;
+                            return raw % 1 === 0 ? raw.toFixed(1) : String(Number(raw.toFixed(3)));
+                          })()}`}
                         </td>
 
                         {/* 5. Real Cost */}
                         <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
-                          {isExpense || isDeduction ? '-' : `${row.realCost || 0} ₺`}
+                          {isExpense || isDeduction ? '-' : `${row.realCost ?? 0} ₺`}
                         </td>
 
                         {/* 6. Cargo Total */}
                         <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
-                          {isExpense || isDeduction ? '-' : `${(row.cargoBase * (1 + (row.cargoVatRate || 0.2))).toFixed(2)} ₺`}
+                          {isExpense || isDeduction ? '-' : `${(Number(row.cargoBase || 0) * (1 + Number(row.cargoVatRate || 0.20))).toFixed(2)} ₺`}
                         </td>
 
                         {/* 7. Hakedis (L) */}
@@ -720,12 +723,15 @@ export default function TrendyolFinanceView({
                                     </div>
                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 pt-1 border-t border-blue-200 dark:border-blue-900/40">
                                       <div className="flex justify-between">
-                                        <span>Komisyon (%{((row.commissionRate || 0.04) * 100).toFixed(1)}):</span>
-                                        <span className="font-mono text-red-500">-{(row.salePrice * (row.commissionRate || 0.04)).toFixed(2)} ₺</span>
+                                        <span>Komisyon (%{(() => {
+                                          const raw = Number(row.commissionRate ?? 0.04) * 100;
+                                          return raw % 1 === 0 ? raw.toFixed(1) : String(Number(raw.toFixed(3)));
+                                        })()}):</span>
+                                        <span className="font-mono text-red-500">-{(Number(row.salePrice || 0) * Number(row.commissionRate ?? 0.04)).toFixed(2)} ₺</span>
                                       </div>
                                       <div className="flex justify-between">
                                         <span>Kargo (KDV Dahil):</span>
-                                        <span className="font-mono text-red-500">-{(row.cargoBase * 1.20).toFixed(2)} ₺</span>
+                                        <span className="font-mono text-red-500">-{(Number(row.cargoBase || 0) * (1 + Number(row.cargoVatRate || 0.20))).toFixed(2)} ₺</span>
                                       </div>
                                       {Number(row.extraExpense) > 0 && (
                                         <div className="flex justify-between">

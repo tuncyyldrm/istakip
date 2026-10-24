@@ -49,13 +49,20 @@ export async function GET() {
       isExpenseRow: r.is_expense_row === 1,
       expenseTitle: r.expense_title,
       salePrice: r.sale_price,
+      vatRate: r.vat_rate,
+      commissionRate: r.commission_rate,
+      realCost: r.real_cost,
+      cargoBase: r.cargo_base,
+      cargoVatRate: r.cargo_vat_rate,
+      extraExpense: r.extra_expense,
+      partnerFixed: r.partner_fixed,
+      deduction: r.deduction,
       hakedis: r.hakedis,
       netVat: r.net_vat,
       incomeTax: r.income_tax,
       partnerTotalShare: r.partner_total_share,
       myReceivable: r.my_receivable,
-      myNetProfit: r.my_net_profit,
-      deduction: r.deduction
+      myNetProfit: r.my_net_profit
     }));
 
     // Format cash

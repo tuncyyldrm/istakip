@@ -113,15 +113,22 @@ export default function Home() {
       const cached = localStorage.getItem('istakip_cache_bootstrap');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed.dashboard) setDashboardData(parsed.dashboard);
-        if (parsed.orders) setOrders(parsed.orders);
-        if (parsed.sales) setSales(parsed.sales);
-        if (parsed.cashSessions) setCashSessions(parsed.cashSessions);
-        if (parsed.settings) setSettings(parsed.settings);
-        if (parsed.printers) setPrinters(parsed.printers);
-        if (parsed.inventory) setInventory(parsed.inventory);
-        // Instant visual feedback without blocking
-        setLoading(false);
+        // Integrity check: stale sales missing cargoBase must be purged
+        const isSalesCacheValid = !parsed.sales || parsed.sales.length === 0 || parsed.sales[0].cargoBase !== undefined;
+        if (isSalesCacheValid) {
+          if (parsed.dashboard) setDashboardData(parsed.dashboard);
+          if (parsed.orders) setOrders(parsed.orders);
+          if (parsed.sales) setSales(parsed.sales);
+          if (parsed.cashSessions) setCashSessions(parsed.cashSessions);
+          if (parsed.settings) setSettings(parsed.settings);
+          if (parsed.printers) setPrinters(parsed.printers);
+          if (parsed.inventory) setInventory(parsed.inventory);
+          // Instant visual feedback without blocking
+          setLoading(false);
+        } else {
+          localStorage.removeItem('istakip_cache_bootstrap');
+          setLoading(true);
+        }
       } else {
         setLoading(true);
       }
