@@ -12,6 +12,8 @@ import SettingsView from '@/components/SettingsView';
 import NewOrderModal from '@/components/NewOrderModal';
 import NewSaleModal from '@/components/NewSaleModal';
 import LoginScreen from '@/components/LoginScreen';
+import CommandPalette from '@/components/CommandPalette';
+import Toast from '@/components/Toast';
 
 import {
   fetchBootstrap,
@@ -65,6 +67,35 @@ export default function Home() {
 
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
   const [saleToEdit, setSaleToEdit] = useState(null);
+
+  // UX Feedback & Global Search States
+  const [toasts, setToasts] = useState([]);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  function showToast(message, type = 'success', title = null) {
+    const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
+    const newToast = { id, message, type, title };
+    setToasts(prev => [...prev.slice(-3), newToast]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3200);
+  }
+
+  function dismissToast(id) {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }
+
+  // Global Ctrl+K / Cmd+K Command Palette Shortcut
+  useEffect(() => {
+    function handleGlobalKeyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   // Check auth and theme on mount
   useEffect(() => {
@@ -228,16 +259,19 @@ export default function Home() {
         if (res.success) {
           setOrders(orders.map(o => o.id === orderToEdit.id ? res.data : o));
           refreshDashboard();
+          showToast(`Sipariş güncellendi: ${orderData.title || orderToEdit.id}`, 'success');
         }
       } else {
         const res = await createOrder(orderData);
         if (res.success) {
           setOrders([res.data, ...orders]);
           refreshDashboard();
+          showToast(`Yeni sipariş oluşturuldu: ${res.data.title || res.data.id}`, 'success');
         }
       }
     } catch (err) {
       console.error(err);
+      showToast('Sipariş kaydedilirken hata oluştu', 'error');
     }
   }
 
@@ -247,9 +281,11 @@ export default function Home() {
       if (res.success) {
         setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus } : o));
         refreshDashboard();
+        showToast(`Aşama güncellendi: ${id} → ${newStatus}`, 'info');
       }
     } catch (err) {
       console.error(err);
+      showToast('Aşama güncellenemedi', 'error');
     }
   }
 
@@ -260,9 +296,11 @@ export default function Home() {
       if (res.success) {
         setOrders(orders.filter(o => o.id !== id));
         refreshDashboard();
+        showToast('Sipariş sistemden silindi', 'warning');
       }
     } catch (err) {
       console.error(err);
+      showToast('Sipariş silinirken hata oluştu', 'error');
     }
   }
 
@@ -286,16 +324,19 @@ export default function Home() {
         if (res.success) {
           setSales(sales.map(s => s.id === saleToEdit.id ? res.data : s));
           refreshDashboard();
+          showToast('Finans kaydı güncellendi', 'success');
         }
       } else {
         const res = await createTrendyolSale(saleData);
         if (res.success) {
           setSales([...sales, res.data]);
           refreshDashboard();
+          showToast('Yeni finans / kesinti kaydı eklendi', 'success');
         }
       }
     } catch (err) {
       console.error(err);
+      showToast('Finans kaydı kaydedilemedi', 'error');
     }
   }
 
@@ -305,6 +346,7 @@ export default function Home() {
       if (res.success) {
         setSales(sales.map(s => s.id === id ? res.data : s));
         refreshDashboard();
+        showToast('Satırın hesaplamaya dahil durumu değiştirildi', 'info');
       }
     } catch (err) {
       console.error(err);
@@ -318,9 +360,11 @@ export default function Home() {
       if (res.success) {
         setSales(sales.filter(s => s.id !== id));
         refreshDashboard();
+        showToast('Finans kaydı silindi', 'warning');
       }
     } catch (err) {
       console.error(err);
+      showToast('Kayıt silinemedi', 'error');
     }
   }
 
@@ -333,9 +377,11 @@ export default function Home() {
       if (res.success) {
         setCashSessions([...cashSessions, res.data]);
         refreshDashboard();
+        showToast('Kasa sayımı başarıyla kaydedildi', 'success');
       }
     } catch (err) {
       console.error(err);
+      showToast('Kasa kaydedilemedi', 'error');
     }
   }
 
@@ -346,6 +392,7 @@ export default function Home() {
       if (res.success) {
         setCashSessions(cashSessions.filter(c => c.id !== id));
         refreshDashboard();
+        showToast('Kasa sayım kaydı silindi', 'warning');
       }
     } catch (err) {
       console.error(err);
@@ -358,6 +405,7 @@ export default function Home() {
   function handleSettingsUpdated(newSettings) {
     setSettings(newSettings);
     refreshDashboard();
+    showToast('Atölye ayarları güncellendi', 'success');
   }
 
   // -----------------------------------------------------------
@@ -369,9 +417,11 @@ export default function Home() {
       if (res.success) {
         setInventory([res.data, ...inventory]);
         refreshDashboard();
+        showToast(`Yeni stok eklendi: ${itemData.name}`, 'success');
       }
     } catch (err) {
       console.error(err);
+      showToast('Stok eklenemedi', 'error');
     }
   }
 
@@ -381,9 +431,11 @@ export default function Home() {
       if (res.success) {
         setInventory(inventory.map(item => item.id === id ? res.data : item));
         refreshDashboard();
+        showToast(`Stok güncellendi: ${itemData.name}`, 'success');
       }
     } catch (err) {
       console.error(err);
+      showToast('Stok güncellenemedi', 'error');
     }
   }
 
@@ -392,6 +444,8 @@ export default function Home() {
       const res = await adjustInventoryQuantity(id, delta);
       if (res.success) {
         setInventory(inventory.map(item => item.id === id ? { ...item, ...res.data } : item));
+        const sign = delta > 0 ? `+${delta}` : `${delta}`;
+        showToast(`Stok miktarı güncellendi (${sign})`, 'info');
       }
     } catch (err) {
       console.error(err);
@@ -405,6 +459,7 @@ export default function Home() {
       if (res.success) {
         setInventory(inventory.filter(item => item.id !== id));
         refreshDashboard();
+        showToast('Stok kalemi silindi', 'warning');
       }
     } catch (err) {
       console.error(err);
@@ -417,9 +472,11 @@ export default function Home() {
       if (res.success) {
         setPrinters([...printers, res.data]);
         refreshDashboard();
+        showToast(`Yeni 3D yazıcı eklendi: ${printerData.name}`, 'success');
       }
     } catch (err) {
       console.error(err);
+      showToast('Yazıcı eklenemedi', 'error');
     }
   }
 
@@ -428,9 +485,11 @@ export default function Home() {
       const res = await updatePrinter(id, printerData);
       if (res.success) {
         setPrinters(printers.map(p => p.id === id ? { ...p, ...res.data } : p));
+        showToast(`Yazıcı bilgileri güncellendi: ${printerData.name}`, 'success');
       }
     } catch (err) {
       console.error(err);
+      showToast('Yazıcı güncellenemedi', 'error');
     }
   }
 
@@ -439,6 +498,7 @@ export default function Home() {
       const res = await patchPrinter(id, patchData);
       if (res.success) {
         setPrinters(printers.map(p => p.id === id ? { ...p, ...res.data } : p));
+        showToast(`Cihaz durumu: ${patchData.status || 'güncellendi'}`, 'info');
       }
     } catch (err) {
       console.error(err);
@@ -452,6 +512,7 @@ export default function Home() {
       if (res.success) {
         setPrinters(printers.filter(p => p.id !== id));
         refreshDashboard();
+        showToast('3D yazıcı sistemden silindi', 'warning');
       }
     } catch (err) {
       console.error(err);
@@ -485,6 +546,7 @@ export default function Home() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onNewOrderClick={() => openNewOrderModal()}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         hourlyCost={settings?.hourlyBaseCost || dashboardData?.hourlyMachineCost || 27}
         theme={theme}
         toggleTheme={toggleTheme}
@@ -592,6 +654,21 @@ export default function Home() {
         onSave={handleSaveSale}
         saleToEdit={saleToEdit}
       />
+
+      {/* Global Quick Search & Command Palette (Ctrl + K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        orders={orders}
+        inventory={inventory}
+        printers={printers}
+        onNavigateTab={(tab) => setActiveTab(tab)}
+        onOpenNewOrder={() => openNewOrderModal()}
+        onOpenNewSale={() => openNewSaleModal()}
+      />
+
+      {/* Modern Floating Toast Notification System */}
+      <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

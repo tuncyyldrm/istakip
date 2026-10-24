@@ -576,30 +576,50 @@ export default function InventoryView({
               placeholder="Filament, koli veya sarf ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700/80 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 transition"
+              className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700/80 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 transition"
             />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto scrollbar-none pb-1 md:pb-0">
             {[
-              { id: 'ALL', label: 'Tümü' },
-              { id: 'filament', label: 'Filamentler' },
-              { id: 'packaging', label: 'Paketleme' },
-              { id: 'consumable', label: 'Sarf & Nozzle' },
-              { id: 'LOW_STOCK', label: 'Kritik Stok' }
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setActiveFilter(f.id)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-                  activeFilter === f.id
-                    ? 'bg-orange-600 text-white shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+              { id: 'ALL', label: 'Tümü', count: (inventory || []).length },
+              { id: 'filament', label: 'Filamentler', count: (inventory || []).filter(i => i.category === 'filament').length },
+              { id: 'packaging', label: 'Paketleme', count: (inventory || []).filter(i => i.category === 'packaging').length },
+              { id: 'consumable', label: 'Sarf & Nozzle', count: (inventory || []).filter(i => i.category === 'consumable').length },
+              { id: 'LOW_STOCK', label: 'Kritik Stok', count: lowStockItems.length, isAlert: lowStockItems.length > 0 }
+            ].map((f) => {
+              const isSelected = activeFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setActiveFilter(f.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+                    isSelected
+                      ? 'bg-orange-600 text-white shadow-sm'
+                      : f.isAlert
+                      ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span>{f.label}</span>
+                  <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                    isSelected 
+                      ? 'bg-white/20 text-white' 
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                  }`}>
+                    {f.count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
