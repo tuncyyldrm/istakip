@@ -9,23 +9,15 @@ import {
   Trash2, 
   Edit3,
   Search,
-  Filter,
   Download,
   ChevronDown,
   ChevronUp,
-  Info,
-  AlertCircle,
   ArrowDownRight,
-  Receipt,
-  Sparkles,
-  Layers,
-  Percent,
   CheckCircle2,
-  DollarSign,
-  HelpCircle,
   X,
-  LayoutList,
-  SlidersHorizontal
+  Layers,
+  FileSpreadsheet,
+  AlertCircle
 } from 'lucide-react';
 
 export default function TrendyolFinanceView({ 
@@ -38,10 +30,25 @@ export default function TrendyolFinanceView({
   const [filterActiveOnly, setFilterActiveOnly] = useState(false);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState('ALL'); // 'ALL' | 'SALES' | 'DEDUCTIONS' | 'EXPENSES'
   const [searchQuery, setSearchQuery] = useState('');
-  const [isCompactMode, setIsCompactMode] = useState(true);
   const [expandedRows, setExpandedRows] = useState({});
-  const [sortBy, setSortBy] = useState('date_desc'); // 'date_desc' | 'date_asc' | 'profit_desc'
+  const [sortBy, setSortBy] = useState('date_desc');
   const [copyFeedback, setCopyFeedback] = useState(false);
+
+  // Safe currency formatter to guarantee NO "NaN ₺" under any circumstance
+  const safeFormat = (val, fallback = '0.00 ₺') => {
+    const n = Number(val);
+    if (isNaN(n) || n === null || n === undefined) return fallback;
+    return `${n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺`;
+  };
+
+  // Safe cargo with VAT calculation
+  const getCargoWithVat = (row) => {
+    const base = Number(row?.cargoBase);
+    const safeBase = isNaN(base) ? 0 : base;
+    const vat = Number(row?.cargoVatRate);
+    const safeVat = isNaN(vat) ? 0.20 : vat;
+    return safeBase * (1 + safeVat);
+  };
 
   // Active items for KPI totals
   const activeItems = (sales || []).filter(s => s.included !== false);
@@ -64,17 +71,14 @@ export default function TrendyolFinanceView({
     activeItems.filter(s => Number(s.deduction || 0) < 0).reduce((acc, s) => acc + Number(s.deduction), 0)
   );
 
-  // Estimated profit margin percentage
   const profitMarginPercent = totalGrossSale > 0 
     ? Math.max(0, Math.round((totalNetProfit / totalGrossSale) * 100))
     : 0;
 
   // Filter & Search
   let processedList = (sales || []).filter((row) => {
-    // 1. Included filter
     if (filterActiveOnly && !row.included) return false;
 
-    // 2. Category filter
     const isDeduction = Number(row.deduction) < 0;
     const isExpense = Boolean(row.isExpenseRow);
     const isNormalSale = !isDeduction && !isExpense;
@@ -83,12 +87,11 @@ export default function TrendyolFinanceView({
     if (activeCategoryFilter === 'DEDUCTIONS' && !isDeduction) return false;
     if (activeCategoryFilter === 'EXPENSES' && !isExpense) return false;
 
-    // 3. Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchId = row.id?.toLowerCase().includes(q);
-      const matchDate = row.date?.toLowerCase().includes(q);
-      const matchTitle = row.expenseTitle?.toLowerCase().includes(q);
+      const matchId = (row.id || '').toLowerCase().includes(q);
+      const matchDate = (row.date || '').toLowerCase().includes(q);
+      const matchTitle = (row.expenseTitle || '').toLowerCase().includes(q);
       const matchPrice = String(row.salePrice || '').includes(q) || String(row.deduction || '').includes(q);
       if (!matchId && !matchDate && !matchTitle && !matchPrice) return false;
     }
@@ -104,18 +107,14 @@ export default function TrendyolFinanceView({
       const valB = Number(b.deduction) < 0 ? Number(b.deduction) : Number(b.myNetProfit || 0);
       return valB - valA;
     }
-    // default date_desc
     return (b.date || '').localeCompare(a.date || '');
   });
 
-  // Toggle row expansion for waterfall detail
   function toggleRowExpand(id) {
-    setExpandedRows(prev => {
-      const next = { ...prev };
-      if (next[id]) delete next[id];
-      else next[id] = true;
-      return next;
-    });
+    setExpandedRows(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
   }
 
   const isAllExpanded = processedList.length > 0 && processedList.every(r => expandedRows[r.id]);
@@ -130,13 +129,12 @@ export default function TrendyolFinanceView({
     }
   }
 
-  // Export to Excel / CSV with Turkish character support (UTF-8 BOM)
   function handleExportCSV() {
     const headers = [
-      "Kayıt No", "Dahil", "Tarih", "Açıklama", "Kayıt Türü", "Satış Fiyatı (TL)",
-      "Komisyon Oranı", "Gerçek Maliyet (TL)", "Kargo Matrah (TL)", "Hakediş L (TL)",
-      "Net KDV M (TL)", "Gelir Vergisi N (TL)", "Ortak Payı O (TL)",
-      "Sizin Alacağınız P (TL)", "Kendi Net Kârınız Q (TL)", "Kesinti (TL)"
+      "Kayıt No", "Dahil", "Tarih", "Açıklama", "Tür", "Satış Fiyatı (TL)",
+      "Komisyon Oranı", "Gerçek Maliyet (TL)", "Kargo Matrah (TL)", "Hakediş (TL)",
+      "Net KDV (TL)", "Gelir Vergisi (TL)", "Ortak Payı (TL)",
+      "Sizin Alacağınız (TL)", "Net Kârınız (TL)", "Kesinti (TL)"
     ];
     
     const rows = processedList.map(s => [
@@ -170,180 +168,161 @@ export default function TrendyolFinanceView({
     document.body.removeChild(link);
   }
 
-  // Quick summary copy
   function handleCopySummary() {
     const summary = `📊 TRENDYOL FİNANS MUTABAKAT ÖZETİ (${new Date().toLocaleDateString('tr-TR')}):
 • Toplam Aktif İşlem: ${activeItems.length} kayıt
-• Trendyol Net Hakediş (L): ${totalHakedis.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-• İş Ortaklığı & Vergi Payı (O): ${totalPartnerShare.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-• SİZİN NET ALACAĞINIZ (P): ${totalReceivable.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-• KENDİ NET KÂRINIZ (Q): ${totalNetProfit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺`;
+• Trendyol Net Hakediş: ${safeFormat(totalHakedis)}
+• İş Ortaklığı & Vergi Payı: ${safeFormat(totalPartnerShare)}
+• SİZİN NET ALACAĞINIZ: ${safeFormat(totalReceivable)}
+• KENDİ NET KÂRINIZ: ${safeFormat(totalNetProfit)}`;
     
     navigator.clipboard.writeText(summary);
     setCopyFeedback(true);
-    setTimeout(() => setCopyFeedback(false), 2500);
+    setTimeout(() => setCopyFeedback(false), 2200);
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-5 animate-fadeIn">
       
       {/* 1. TOP HEADER & PRIMARY ACTIONS */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs transition-colors">
         <div>
-          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>Pazar Yeri Hakediş & Kâr Dağıtım Masası</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+              Pazar Yeri Hakediş & Dağıtım Masası
+            </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Trendyol Finans, Hakediş & Kâr Paylaşımı
+            Trendyol Finans & Kâr Paylaşımı
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Satış gelirleri, platform komisyonları, iade kesintileri, KDV borcu, gelir vergisi ve net kârınız.
+            Satış gelirleri, komisyon, kargo, vergi ve net kârınızı şeffaf dökümle yönetin.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap self-start md:self-center">
           <button
             onClick={handleExportCSV}
-            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 active:scale-95 shadow-sm"
+            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 active:scale-95"
             title="Excel uyumlu CSV indir"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-            <span className="hidden sm:inline">Excel / CSV İndir</span>
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">CSV İndir</span>
           </button>
 
           <button
             onClick={handleCopySummary}
-            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 active:scale-95 shadow-sm"
-            title="Finansal özeti panoya kopyala"
+            className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 active:scale-95"
+            title="Özeti kopyala"
           >
-            {copyFeedback ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Layers className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />}
-            <span className="hidden sm:inline">{copyFeedback ? 'Kopyalandı!' : 'Özeti Kopyala'}</span>
+            {copyFeedback ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Layers className="w-3.5 h-3.5 text-slate-400" />}
+            <span className="hidden sm:inline">{copyFeedback ? 'Kopyalandı' : 'Özet Kopyala'}</span>
           </button>
 
           <button
             onClick={() => onNewSaleClick()}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md shadow-emerald-600/25 transition flex items-center gap-1.5 active:scale-95"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-xs transition flex items-center gap-1.5 active:scale-95"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Yeni Satış / İade / Masraf</span>
+            <span>Yeni Kayıt</span>
           </button>
         </div>
       </div>
 
-      {/* 2. TOP FINANCIAL KPI METRICS (4 CARDS) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* Card 1: Trendyol Net Hakedis */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm transition-colors">
+      {/* 2. EXECUTIVE FINANCIAL KPI CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Hakedis */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span className="font-semibold">Trendyol Net Hakediş (L)</span>
-            <span className="text-[10px] bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded font-mono font-bold border border-blue-200 dark:border-blue-500/20">
-              Yatacak Tutar
+            <span className="font-semibold">Trendyol Hakediş</span>
+            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded font-mono">
+              Net Aktarılan
             </span>
           </div>
-          <div className="mt-3 flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-black font-mono text-blue-600 dark:text-blue-400">
-              {totalHakedis.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400">
+              {totalHakedis.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-sm font-bold text-blue-600/80 dark:text-blue-400/80">₺</span>
+            <span className="text-xs font-bold text-blue-600/80">₺</span>
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-            Brüt Satış - Komisyon - Kargo - Ekstra
-          </p>
+          <p className="text-[10px] text-slate-400 mt-1">Brüt Satış - Komisyon - Kargo - Ekstra</p>
         </div>
 
-        {/* Card 2: Partner & Tax Share */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm transition-colors">
+        {/* Card 2: Partner Share */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span className="font-semibold">İş Ortaklığı & Vergi Payı (O)</span>
-            <span className="text-[10px] bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded font-mono font-bold border border-purple-200 dark:border-purple-500/20">
-              Vergi + Pay
+            <span className="font-semibold">Vergi & Ortak Payı</span>
+            <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.2 rounded font-mono">
+              KDV + Stopaj
             </span>
           </div>
-          <div className="mt-3 flex items-baseline gap-1.5">
-            <span className="text-2xl sm:text-3xl font-black font-mono text-purple-600 dark:text-purple-400">
-              {totalPartnerShare.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400">
+              {totalPartnerShare.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-sm font-bold text-purple-600/80 dark:text-purple-400/80">₺</span>
+            <span className="text-xs font-bold text-purple-600/80">₺</span>
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 flex items-center justify-between">
+          <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
             <span>Net KDV: <strong className="text-slate-700 dark:text-slate-300 font-mono">{totalNetVat.toFixed(1)} ₺</strong></span>
-            <span>Gelir V.: <strong className="text-slate-700 dark:text-slate-300 font-mono">{totalIncomeTax.toFixed(1)} ₺</strong></span>
+            <span>Stopaj: <strong className="text-slate-700 dark:text-slate-300 font-mono">{totalIncomeTax.toFixed(1)} ₺</strong></span>
           </div>
         </div>
 
-        {/* Card 3: Your Total Receivable (Primary Focus) */}
-        <div className="bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl p-5 relative overflow-hidden shadow-sm transition-colors">
-          <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-400 font-semibold">
-            <span>SİZİN KALAN ALACAĞINIZ (P)</span>
-            <span className="text-[10px] bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded font-bold border border-emerald-300 dark:border-emerald-500/30">
-              Net Bakiye
+        {/* Card 3: Sizin Alacağınız */}
+        <div className="bg-white dark:bg-slate-900 border border-emerald-500/30 rounded-2xl p-4 ring-1 ring-emerald-500/20 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
+            <span>SİZİN NET ALACAĞINIZ</span>
+            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 px-1.5 py-0.2 rounded">
+              Kalan Bakiye
             </span>
           </div>
-          <div className="mt-3 flex items-baseline gap-1.5">
-            <span className="text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-              {totalReceivable.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+              {totalReceivable.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-base font-bold text-emerald-600/80">₺</span>
+            <span className="text-xs font-bold text-emerald-600/80">₺</span>
           </div>
-          <p className="text-[11px] text-emerald-700/90 dark:text-slate-400 mt-2">
-            Hakedişten ortaklık payı ve iade kesintileri düşüldükten sonra kalan
-          </p>
+          <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-1">Hakedişten ortaklık payı ve iadeler düşüldükten sonra</p>
         </div>
 
-        {/* Card 4: Your Real Net Profit (Clean Profit) */}
-        <div className="bg-cyan-50/60 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-500/30 rounded-2xl p-5 relative overflow-hidden shadow-sm transition-colors">
-          <div className="flex items-center justify-between text-xs text-cyan-800 dark:text-cyan-400 font-semibold">
-            <span>KENDİ NET KÂRINIZ (Q)</span>
-            <span className="text-[10px] bg-cyan-100 dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 px-2 py-0.5 rounded font-bold border border-cyan-300 dark:border-cyan-500/30">
-              Temiz Kâr (%{profitMarginPercent})
+        {/* Card 4: Sizin Net Kârınız */}
+        <div className="bg-white dark:bg-slate-900 border border-cyan-500/30 rounded-2xl p-4 ring-1 ring-cyan-500/20 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-cyan-700 dark:text-cyan-400 font-semibold">
+            <span>KENDİ NET KÂRINIZ</span>
+            <span className="text-[10px] font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-500/15 px-1.5 py-0.2 rounded font-mono">
+              %{profitMarginPercent} Marj
             </span>
           </div>
-          <div className="mt-3 flex items-baseline gap-1.5">
-            <span className="text-3xl font-black font-mono text-cyan-600 dark:text-cyan-400">
-              {totalNetProfit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-2xl font-bold font-mono text-cyan-600 dark:text-cyan-400">
+              {totalNetProfit.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
-            <span className="text-base font-bold text-cyan-600/80">₺</span>
+            <span className="text-xs font-bold text-cyan-600/80">₺</span>
           </div>
-          <p className="text-[11px] text-cyan-700/90 dark:text-slate-400 mt-2">
-            Net Alacağınız - Gerçek Filament & Üretim Maliyeti ({totalRealCost.toLocaleString('tr-TR')} ₺)
+          <p className="text-[10px] text-cyan-600/80 dark:text-cyan-400/80 mt-1">
+            Üretim maliyeti ({safeFormat(totalRealCost)}) düşüldükten sonra net kazanç
           </p>
         </div>
       </div>
 
-      {/* 3. DEDUCTIONS & RETURNS ALERT BANNER (If there are return deductions) */}
+      {/* 3. DEDUCTION NOTICE BANNER (If deductions exist) */}
       {deductionsCount > 0 && (
-        <div className="bg-red-50/80 dark:bg-red-950/25 border border-red-200 dark:border-red-900/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-red-800 dark:text-red-300">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0 font-bold">
-              <ArrowDownRight className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-bold block">
-                İade & Ceza Kesintileri: Toplam {deductionsCount} Adet Kayıt
-              </span>
-              <p className="text-[11px] text-red-700/80 dark:text-red-400/80 mt-0.5">
-                İade kargo masrafları ve platform kesintileri doğrudan Alacağınızdan (P) ve Net Kârınızdan (Q) düşülmüştür.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="font-black font-mono text-sm text-red-600 dark:text-red-400">
-              -{totalDeductionsAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+        <div className="bg-red-50/70 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-xl px-4 py-2.5 flex items-center justify-between text-xs text-red-800 dark:text-red-300">
+          <div className="flex items-center gap-2">
+            <ArrowDownRight className="w-4 h-4 text-red-500 shrink-0" />
+            <span>
+              <strong>{deductionsCount} İade & Kesinti:</strong> Masraflar doğrudan alacağınızdan ve kârınızdan düşülmüştür.
             </span>
-            <button
-              onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'DEDUCTIONS' ? 'ALL' : 'DEDUCTIONS')}
-              className="text-[11px] font-bold bg-white dark:bg-slate-900 hover:bg-red-100 dark:hover:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800/80 px-2.5 py-1 rounded-lg transition"
-            >
-              {activeCategoryFilter === 'DEDUCTIONS' ? 'Tümünü Göster' : 'Sadece İadeleri Filtrele'}
-            </button>
           </div>
+          <span className="font-mono font-bold text-red-600 dark:text-red-400">
+            -{safeFormat(totalDeductionsAmount)}
+          </span>
         </div>
       )}
 
-      {/* 4. FINANCIAL TABLE CONTROLS & FILTER BAR */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row gap-3 items-center justify-between shadow-sm transition-colors">
+      {/* 4. TOOLBAR: SEARCH & CATEGORY PILLS */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 sm:p-4 rounded-2xl flex flex-col md:flex-row gap-3 items-center justify-between shadow-xs">
         
         {/* Search */}
         <div className="relative w-full md:w-80">
@@ -353,43 +332,41 @@ export default function TrendyolFinanceView({
             placeholder="Kayıt no (TS-006), tarih veya açıklama ara..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700/80 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
+            className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
           />
           {searchQuery && (
             <button 
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        {/* Category Pills & Included Checkbox */}
-        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto scrollbar-none pb-1 md:pb-0">
-          
-          {/* Category Tabs with counters */}
+        {/* Category Pills & Actions */}
+        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto scrollbar-none pb-0.5">
           <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700/80">
             {[
               { id: 'ALL', label: 'Tümü', count: (sales || []).length },
               { id: 'SALES', label: 'Satışlar', count: salesCount },
-              { id: 'DEDUCTIONS', label: 'İadeler (-)', count: deductionsCount, color: 'text-red-500' },
-              { id: 'EXPENSES', label: 'Masraflar', count: expensesCount, color: 'text-amber-500' }
+              { id: 'DEDUCTIONS', label: 'İadeler (-)', count: deductionsCount },
+              { id: 'EXPENSES', label: 'Masraflar', count: expensesCount }
             ].map((tab) => {
               const isSelected = activeCategoryFilter === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveCategoryFilter(tab.id)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap ${
                     isSelected
-                      ? 'bg-emerald-600 text-white shadow-sm'
+                      ? 'bg-emerald-600 text-white shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <span>{tab.label}</span>
-                  <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                  <span className={`text-[10px] font-mono px-1 rounded-full ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500'
                   }`}>
                     {tab.count}
                   </span>
@@ -398,7 +375,7 @@ export default function TrendyolFinanceView({
             })}
           </div>
 
-          {/* Active Included Only Filter */}
+          {/* Active Included Toggle */}
           <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 whitespace-nowrap select-none hover:bg-slate-200 dark:hover:bg-slate-700 transition">
             <input
               type="checkbox"
@@ -406,169 +383,42 @@ export default function TrendyolFinanceView({
               onChange={(e) => setFilterActiveOnly(e.target.checked)}
               className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-0 cursor-pointer w-3.5 h-3.5"
             />
-            <span className="text-[11px] font-semibold">Sadece Dahil Olanlar ({activeItems.length})</span>
+            <span className="text-[11px] font-medium">Sadece Dahil Olanlar ({activeItems.length})</span>
           </label>
 
-          {/* View Mode Toggle: Kompakt (Önerilen) vs Geniş */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700/80">
-            <button
-              type="button"
-              onClick={() => setIsCompactMode(true)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
-                isCompactMode
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="Kaydırma gerektirmeyen kompakt görünüm (Önerilen)"
-            >
-              <LayoutList className="w-3.5 h-3.5" />
-              <span>Kompakt</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsCompactMode(false)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
-                !isCompactMode
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="Tüm 13 sütunu gösteren geniş Excel tablosu"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>Geniş Tablo</span>
-            </button>
-          </div>
-
-          {/* Expand/Collapse All Details Button */}
+          {/* Expand / Collapse All Details */}
           <button
             type="button"
             onClick={toggleExpandAll}
-            className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 whitespace-nowrap select-none hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-            title={isAllExpanded ? "Tüm ayrıntıları kapat" : "Tüm satırların ayrıntılarını aç"}
+            className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 whitespace-nowrap select-none hover:bg-slate-200 dark:hover:bg-slate-700 transition font-medium"
+            title={isAllExpanded ? "Tüm ayrıntıları gizle" : "Tüm ayrıntıları aç"}
           >
-            {isAllExpanded ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
-            <span className="text-[11px] font-semibold">{isAllExpanded ? 'Ayrıntıları Kapat' : 'Tüm Ayrıntıları Aç'}</span>
+            {isAllExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            <span className="text-[11px] hidden sm:inline">{isAllExpanded ? 'Ayrıntıları Gizle' : 'Tümünü Aç'}</span>
           </button>
         </div>
       </div>
 
-      {/* 5. FINANCIAL TABLE WITH RESPONSIVE COMPACT / EXPANDED MODE */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm transition-colors">
-        
-        {/* Helper Hint */}
-        {isCompactMode && (
-          <div className="px-4 py-2 bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100 dark:border-emerald-900/30 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <strong>Kompakt Görünüm Aktif:</strong> Ana rakamlar listelenir. Satıra veya <strong>Ayrıntılar</strong> butonuna tıklayarak komisyon, kargo ve vergi dökümünü görebilirsiniz.
-            </span>
-            <span className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 hidden sm:inline">Kaydırma gerektirmez</span>
-          </div>
-        )}
-
+      {/* 5. STREAMLINED 6-COLUMN TABLE (NO HORIZONTAL MOUSE SCROLLING!) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs transition-colors">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs whitespace-nowrap">
-            
-            {/* SUPER HEADER ROW (GROUPINGS) */}
-            <thead className="bg-slate-100 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-              {isCompactMode ? (
-                <tr>
-                  <th colSpan="2" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left">
-                    📦 Sipariş / İşlem Bilgisi
-                  </th>
-                  <th colSpan="2" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-blue-600 dark:text-blue-400">
-                    🏢 Satış & Trendyol Geliri
-                  </th>
-                  <th colSpan="1" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-purple-600 dark:text-purple-400">
-                    🏛️ Vergi / Ortak
-                  </th>
-                  <th colSpan="2" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-emerald-600 dark:text-emerald-400">
-                    💰 Net Kazancınız
-                  </th>
-                  <th className="py-2 px-3 text-right">
-                    Ayrıntılar & İşlem
-                  </th>
-                </tr>
-              ) : (
-                <tr>
-                  <th colSpan="3" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left">
-                    📦 Sipariş / İşlem Bilgisi
-                  </th>
-                  <th colSpan="4" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-blue-600 dark:text-blue-400">
-                    🏢 Pazar Yeri & Lojistik (Trendyol)
-                  </th>
-                  <th colSpan="3" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-purple-600 dark:text-purple-400">
-                    🏛️ Vergi & Ortaklık Payı (O Sütunu)
-                  </th>
-                  <th colSpan="2" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-emerald-600 dark:text-emerald-400">
-                    💰 Sizin Net Kazancınız
-                  </th>
-                  <th className="py-2 px-3 text-right">
-                    İşlem
-                  </th>
-                </tr>
-              )}
-
-              {/* SUB HEADER ROW (INDIVIDUAL COLUMNS) */}
-              {isCompactMode ? (
-                <tr className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-300">
-                  <th className="py-2.5 px-3 text-center w-10">Dahil</th>
-                  <th className="py-2.5 px-3">Tarih / Kayıt Açıklaması</th>
-                  <th className="py-2.5 px-3 border-r border-slate-200 dark:border-slate-800">Satış / Kesinti</th>
-                  
-                  <th className="py-2.5 px-3 text-blue-600 dark:text-blue-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
-                    Hakediş (L)
-                  </th>
-
-                  <th className="py-2.5 px-3 text-purple-600 dark:text-purple-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
-                    Ortak Payı (O)
-                  </th>
-
-                  <th className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-extrabold">
-                    Alacağınız (P)
-                  </th>
-                  <th className="py-2.5 px-3 text-cyan-600 dark:text-cyan-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
-                    Net Kârınız (Q)
-                  </th>
-
-                  <th className="py-2.5 px-3 text-right">Ayrıntılar & Yönet</th>
-                </tr>
-              ) : (
-                <tr className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-300">
-                  <th className="py-2.5 px-3 text-center w-10">Dahil</th>
-                  <th className="py-2.5 px-3">Tarih / Açıklama</th>
-                  <th className="py-2.5 px-3 border-r border-slate-200 dark:border-slate-800">Satış Fiyatı</th>
-                  
-                  <th className="py-2.5 px-3">Komisyon</th>
-                  <th className="py-2.5 px-3">Maliyet (₺)</th>
-                  <th className="py-2.5 px-3">Kargo (KDV'li)</th>
-                  <th className="py-2.5 px-3 text-blue-600 dark:text-blue-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
-                    Hakediş (L)
-                  </th>
-
-                  <th className="py-2.5 px-3 text-purple-600 dark:text-purple-300">Net KDV (M)</th>
-                  <th className="py-2.5 px-3 text-purple-600 dark:text-purple-300">Gelir V. (N)</th>
-                  <th className="py-2.5 px-3 text-purple-600 dark:text-purple-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
-                    Ortak Payı (O)
-                  </th>
-
-                  <th className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-extrabold">
-                    Alacağınız (P)
-                  </th>
-                  <th className="py-2.5 px-3 text-cyan-600 dark:text-cyan-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
-                    Net Kârınız (Q)
-                  </th>
-
-                  <th className="py-2.5 px-3 text-right">Yönet</th>
-                </tr>
-              )}
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <tr>
+                <th className="py-3 px-3 text-center w-10">Dahil</th>
+                <th className="py-3 px-3.5">Kayıt / Tarih</th>
+                <th className="py-3 px-3.5">Brüt Tutar</th>
+                <th className="py-3 px-3.5 text-blue-600 dark:text-blue-400">Trendyol Hakediş</th>
+                <th className="py-3 px-3.5 text-purple-600 dark:text-purple-400">Ortak Payı</th>
+                <th className="py-3 px-3.5 text-cyan-600 dark:text-cyan-400">Net Kârınız</th>
+                <th className="py-3 px-3.5 text-right">Ayrıntılar & İşlem</th>
+              </tr>
             </thead>
 
-            {/* TABLE BODY */}
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {processedList.length === 0 ? (
                 <tr>
-                  <td colSpan={isCompactMode ? 8 : 13} className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+                  <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
                     Kriterlere uygun finansal kayıt bulunamadı.
                   </td>
                 </tr>
@@ -577,187 +427,113 @@ export default function TrendyolFinanceView({
                   const isExpense = row.isExpenseRow;
                   const isDeduction = Number(row.deduction) < 0;
                   const isExpanded = Boolean(expandedRows[row.id]);
+                  const cargoTotal = getCargoWithVat(row);
 
                   return (
                     <React.Fragment key={row.id}>
+                      {/* MAIN COMPACT ROW */}
                       <tr 
+                        onClick={() => toggleRowExpand(row.id)}
                         className={`transition cursor-pointer select-none ${
                           !row.included 
-                            ? 'opacity-40 bg-slate-50 dark:bg-slate-950/40' 
-                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                            ? 'opacity-40 bg-slate-50/50 dark:bg-slate-950/30' 
+                            : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50'
                         } ${
-                          isExpense ? 'bg-amber-50/50 dark:bg-amber-950/15' : ''
-                        } ${
-                          isDeduction ? 'bg-red-50/60 dark:bg-red-950/20' : ''
-                        } ${
-                          isExpanded ? 'ring-1 ring-inset ring-emerald-500/30' : ''
+                          isExpanded ? 'bg-slate-50/90 dark:bg-slate-800/60' : ''
                         }`}
-                        onClick={() => toggleRowExpand(row.id)}
                       >
                         {/* 1. Included Checkbox */}
                         <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => onToggleSale(row.id)}
-                            className="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition p-1"
+                            className="text-slate-400 hover:text-emerald-600 transition p-1"
                             title={row.included ? "Hesaplamadan çıkar" : "Hesaplamaya dahil et"}
                           >
                             {row.included ? (
-                              <CheckSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                              <CheckSquare className="w-4 h-4 text-emerald-600" />
                             ) : (
-                              <Square className="w-4 h-4 text-slate-400 dark:text-slate-600" />
+                              <Square className="w-4 h-4 text-slate-400" />
                             )}
                           </button>
                         </td>
 
-                        {/* 2. Date & Title / Badges */}
-                        <td className="py-3 px-3 font-medium text-slate-900 dark:text-white">
+                        {/* 2. ID, Date & Badge */}
+                        <td className="py-3 px-3.5 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-mono font-bold text-slate-400">
+                            <span className="font-mono font-bold text-slate-900 dark:text-white">
                               {row.id}
                             </span>
-
                             {isExpense ? (
-                              <div>
-                                <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold">
-                                  <span className="text-[10px] bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900/50">
-                                    MASRAF
-                                  </span>
-                                  <span>{row.expenseTitle || 'Masraf / Kesinti'}</span>
-                                </div>
-                                {row.date && (
-                                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                    {row.date}
-                                  </div>
-                                )}
-                              </div>
+                              <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.2 rounded font-bold border border-amber-500/20">
+                                MASRAF
+                              </span>
                             ) : isDeduction ? (
-                              <div>
-                                <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 font-bold">
-                                  <span className="text-[10px] bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded border border-red-200 dark:border-red-900/50">
-                                    İADE / KESİNTİ
-                                  </span>
-                                  <span>{row.expenseTitle || 'İade Kesintisi'}</span>
-                                </div>
-                                {row.date && (
-                                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                    {row.date}
-                                  </div>
-                                )}
-                              </div>
+                              <span className="text-[10px] bg-red-500/10 text-red-600 dark:text-red-400 px-1.5 py-0.2 rounded font-bold border border-red-500/20">
+                                İADE KESİNTİSİ
+                              </span>
                             ) : (
-                              <div>
-                                <div className="text-slate-800 dark:text-slate-200 font-semibold font-mono">
-                                  {row.date || '-'}
-                                </div>
-                                {row.expenseTitle && (
-                                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal mt-0.5">
-                                    {row.expenseTitle}
-                                  </div>
-                                )}
-                              </div>
+                              <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded font-bold border border-emerald-500/20">
+                                SATIŞ
+                              </span>
                             )}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                            {row.date || '-'} {row.expenseTitle ? `• ${row.expenseTitle}` : ''}
                           </div>
                         </td>
 
-                        {/* 3. Sale Price */}
-                        <td className="py-3 px-3 font-semibold font-mono text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-slate-800">
+                        {/* 3. Sale Price or Deduction */}
+                        <td className="py-3 px-3.5 whitespace-nowrap font-mono font-semibold">
                           {isDeduction ? (
                             <span className="text-red-600 dark:text-red-400 font-bold">
-                              {Number(row.deduction).toFixed(2)} ₺
+                              {safeFormat(row.deduction)}
                             </span>
                           ) : (
-                            `${Number(row.salePrice || 0).toFixed(2)} ₺`
+                            <span className="text-slate-800 dark:text-slate-200">
+                              {safeFormat(row.salePrice)}
+                            </span>
                           )}
                         </td>
 
-                        {/* WIDE-ONLY COLUMNS 4, 5, 6 */}
-                        {!isCompactMode && (
-                          <>
-                            {/* 4. Commission */}
-                            <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
-                              {isExpense || isDeduction ? '-' : `%${(() => {
-                                const raw = Number(row.commissionRate ?? 0.04) * 100;
-                                return raw % 1 === 0 ? raw.toFixed(1) : String(Number(raw.toFixed(3)));
-                              })()}`}
-                            </td>
-
-                            {/* 5. Real Cost */}
-                            <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
-                              {isExpense || isDeduction ? '-' : `${row.realCost ?? 0} ₺`}
-                            </td>
-
-                            {/* 6. Cargo Total */}
-                            <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
-                              {isExpense || isDeduction ? '-' : `${(Number(row.cargoBase || 0) * (1 + Number(row.cargoVatRate || 0.20))).toFixed(2)} ₺`}
-                            </td>
-                          </>
-                        )}
-
-                        {/* 7. Hakedis (L) */}
-                        <td className="py-3 px-3 font-bold font-mono text-blue-600 dark:text-blue-400 border-r border-slate-100 dark:border-slate-800">
-                          {isDeduction ? '-' : `${Number(row.hakedis || 0).toFixed(2)} ₺`}
+                        {/* 4. Hakedis */}
+                        <td className="py-3 px-3.5 whitespace-nowrap font-mono font-bold text-blue-600 dark:text-blue-400">
+                          {isDeduction ? '-' : safeFormat(row.hakedis)}
                         </td>
 
-                        {/* WIDE-ONLY COLUMNS 8, 9 */}
-                        {!isCompactMode && (
-                          <>
-                            {/* 8. Net KDV (M) */}
-                            <td className="py-3 px-3 text-purple-600 dark:text-purple-300 font-mono">
-                              {isExpense || isDeduction ? '0.00 ₺' : `${Number(row.netVat || 0).toFixed(2)} ₺`}
-                            </td>
-
-                            {/* 9. Income Tax (N) */}
-                            <td className="py-3 px-3 text-purple-600 dark:text-purple-300 font-mono">
-                              {isDeduction ? '-' : `${Number(row.incomeTax || 0).toFixed(2)} ₺`}
-                            </td>
-                          </>
-                        )}
-
-                        {/* 10. Partner Total Share (O) */}
-                        <td className="py-3 px-3 font-bold font-mono text-purple-600 dark:text-purple-400 border-r border-slate-100 dark:border-slate-800">
-                          {isDeduction ? '-' : `${Number(row.partnerTotalShare || 0).toFixed(2)} ₺`}
+                        {/* 5. Partner Share */}
+                        <td className="py-3 px-3.5 whitespace-nowrap font-mono font-bold text-purple-600 dark:text-purple-400">
+                          {isDeduction ? '-' : safeFormat(row.partnerTotalShare)}
                         </td>
 
-                        {/* 11. Your Receivable (P) */}
-                        <td className="py-3 px-3 font-black font-mono text-emerald-600 dark:text-emerald-400 text-sm">
+                        {/* 6. Net Profit */}
+                        <td className="py-3 px-3.5 whitespace-nowrap font-mono font-bold text-cyan-600 dark:text-cyan-400">
                           {isDeduction ? (
                             <span className="text-red-600 dark:text-red-400">
-                              {Number(row.deduction).toFixed(2)} ₺
+                              {safeFormat(row.deduction)}
                             </span>
                           ) : (
-                            `${Number(row.myReceivable || 0).toFixed(2)} ₺`
+                            safeFormat(row.myNetProfit)
                           )}
                         </td>
 
-                        {/* 12. Your Net Profit (Q) */}
-                        <td className="py-3 px-3 font-black font-mono text-cyan-600 dark:text-cyan-400 text-sm border-r border-slate-100 dark:border-slate-800">
-                          {isDeduction ? (
-                            <span className="text-red-600 dark:text-red-400">
-                              {Number(row.deduction).toFixed(2)} ₺
-                            </span>
-                          ) : (
-                            `${Number(row.myNetProfit || 0).toFixed(2)} ₺`
-                          )}
-                        </td>
-
-                        {/* 13. Actions & Expand Chevron */}
-                        <td className="py-3 px-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        {/* 7. Accordion Toggle & Actions */}
+                        <td className="py-3 px-3.5 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => toggleRowExpand(row.id)}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-xs ${
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition flex items-center gap-1 ${
                                 isExpanded
-                                  ? 'bg-emerald-600 text-white shadow-sm'
-                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-700'
+                                  ? 'bg-emerald-600 text-white'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 border border-slate-200 dark:border-slate-700'
                               }`}
                               title={isExpanded ? "Ayrıntıları Gizle" : "Ayrıntıları Göster"}
                             >
-                              <span>Ayrıntılar</span>
+                              <span>Ayrıntı</span>
                               {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                             </button>
                             <button
                               onClick={() => onEditSale(row)}
-                              className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                              className="text-slate-400 hover:text-slate-800 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                               title="Düzenle"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
@@ -773,155 +549,127 @@ export default function TrendyolFinanceView({
                         </td>
                       </tr>
 
-                      {/* INLINE WATERFALL DETAIL DRAWER FOR EXPANDED ROW */}
+                      {/* EXPANDABLE ACCORDION DRAWER (FULL WATERFALL BREAKDOWN) */}
                       {isExpanded && (
-                        <tr className="bg-slate-100/70 dark:bg-slate-950/80 border-y border-slate-200 dark:border-slate-800 text-xs">
-                          <td colSpan={isCompactMode ? 8 : 13} className="p-4 sm:p-5">
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-inner space-y-4">
-                              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <tr className="bg-slate-50/80 dark:bg-slate-850/80 border-b border-slate-200 dark:border-slate-800">
+                          <td colSpan={7} className="p-4 sm:p-5">
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750 rounded-xl p-4 shadow-xs">
+                              
+                              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800 text-xs">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-mono font-bold text-orange-500 text-xs">{row.id}</span>
-                                  <span className="font-bold text-slate-900 dark:text-white">
-                                    {isDeduction ? 'İade & Ceza Kesintisi Dökümü' : isExpense ? 'Harici Ortaklık Gideri Dökümü' : 'Kuruşu Kuruşuna Finansal Şelale Dökümü'}
+                                  <span className="font-bold font-mono text-slate-900 dark:text-white">{row.id}</span>
+                                  <span className="text-slate-400">•</span>
+                                  <span className="text-slate-600 dark:text-slate-300">
+                                    {isDeduction ? 'İade & Ceza Kesintisi Dökümü' : isExpense ? 'Harici Masraf Dökümü' : 'Kuruşu Kuruşuna Finansal Hesaplama'}
                                   </span>
                                 </div>
-                                <span className="text-[11px] text-slate-500 font-mono">Tarih: {row.date || 'Belirtilmedi'}</span>
+                                <span className="text-[11px] text-slate-400 font-mono">{row.date}</span>
                               </div>
 
                               {isDeduction ? (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-300 space-y-1">
-                                    <span className="font-bold block">İade Kesintisi Nedir?</span>
-                                    <p className="text-[11px] text-red-700/80 dark:text-red-300/80 leading-relaxed">
-                                      Müşteri iadesi veya kargo iade masrafı gibi durumlarda Trendyol tarafından faturadan kesilen doğrudan giderdir. Vergi ve ortaklık payı uygulanmaz; doğrudan Sizin Alacağınızdan (P) ve Net Kârınızdan (Q) düşülür.
-                                    </p>
-                                  </div>
-                                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2">
-                                    <div className="flex justify-between">
-                                      <span className="text-slate-500">Kesinti Tutarı:</span>
-                                      <strong className="text-red-600 dark:text-red-400 font-mono font-bold">{row.deduction} ₺</strong>
-                                    </div>
-                                    <div className="flex justify-between border-t border-slate-200 dark:border-slate-700 pt-2">
-                                      <span className="text-slate-500">Alacaktan / Kârdan Net Düşüş:</span>
-                                      <strong className="text-red-600 dark:text-red-400 font-mono font-bold">{row.deduction} ₺</strong>
-                                    </div>
-                                  </div>
+                                <div className="space-y-2 text-xs text-red-800 dark:text-red-300">
+                                  <p>
+                                    Bu işlem Trendyol tarafından yansıtılan bir iade kargo ve ceza kesintisidir. Komisyon ve KDV hesaplanmadan doğrudan <strong>Alacağınızdan ({safeFormat(row.deduction)})</strong> ve <strong>Kârınızdan ({safeFormat(row.deduction)})</strong> düşülmüştür.
+                                  </p>
                                 </div>
                               ) : isExpense ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1">
-                                    <span className="text-slate-400 text-[10px] uppercase font-bold block">1. Yapılan Harcama</span>
-                                    <span className="text-base font-black font-mono text-slate-900 dark:text-white">{Number(row.salePrice).toFixed(2)} ₺</span>
-                                    <p className="text-[10px] text-slate-500">Ortaklık adına cebinizden çıkan gider</p>
+                                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                                    <span className="text-[10px] text-slate-400 block">Harcanan Tutar</span>
+                                    <span className="font-mono font-bold text-slate-900 dark:text-white">{safeFormat(row.salePrice)}</span>
                                   </div>
-                                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1">
-                                    <span className="text-slate-400 text-[10px] uppercase font-bold block">2. Gelir Vergisi Payı (%20)</span>
-                                    <span className="text-base font-black font-mono text-purple-600 dark:text-purple-400">{Number(row.incomeTax).toFixed(2)} ₺</span>
-                                    <p className="text-[10px] text-slate-500">Şirket vergisi için ayrılan pay</p>
+                                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                                    <span className="text-[10px] text-slate-400 block">Ortak Stopaj Payı (%20)</span>
+                                    <span className="font-mono font-bold text-purple-600 dark:text-purple-400">{safeFormat(row.incomeTax)}</span>
                                   </div>
-                                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-500/30 space-y-1">
-                                    <span className="text-emerald-700 dark:text-emerald-400 text-[10px] uppercase font-bold block">3. Alacağınıza Yansıyan</span>
-                                    <span className="text-base font-black font-mono text-emerald-600 dark:text-emerald-400">{Number(row.myReceivable).toFixed(2)} ₺</span>
-                                    <p className="text-[10px] text-emerald-700/80">Cebinize geri dönecek net bakiye</p>
+                                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                                    <span className="text-[10px] text-slate-400 block">Sizin Net Alacağınız</span>
+                                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{safeFormat(row.myReceivable)}</span>
                                   </div>
                                 </div>
                               ) : (
-                                /* Normal Sale 4-Step Waterfall */
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                                   
-                                  {/* Step 1: Gross Sale */}
-                                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-                                    <span className="text-[10px] uppercase font-bold text-slate-400 block">1. Müşteri Satış Fiyatı</span>
-                                    <div className="text-xl font-black font-mono text-slate-900 dark:text-white">
-                                      {Number(row.salePrice).toFixed(2)} ₺
+                                  {/* Col 1: Platform & Hakedis */}
+                                  <div className="space-y-1.5 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
+                                    <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 block mb-1">
+                                      1. Satış & Trendyol Kesintileri
+                                    </span>
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>Satış Fiyatı:</span>
+                                      <span className="font-mono font-semibold">{safeFormat(row.salePrice)}</span>
                                     </div>
-                                    <div className="text-[11px] text-slate-500 space-y-1 pt-1 border-t border-slate-200 dark:border-slate-700">
-                                      <div className="flex justify-between">
-                                        <span>KDV Oranı:</span>
-                                        <span className="font-mono">%{(Number(row.vatRate || 0.2) * 100).toFixed(0)}</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span>KDV Hariç Matrah:</span>
-                                        <span className="font-mono">{(Number(row.salePrice) / 1.20).toFixed(2)} ₺</span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Step 2: Trendyol Deductions */}
-                                  <div className="p-3.5 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 space-y-2">
-                                    <span className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 block">2. Trendyol Hakediş (L)</span>
-                                    <div className="text-xl font-black font-mono text-blue-600 dark:text-blue-400">
-                                      {Number(row.hakedis).toFixed(2)} ₺
-                                    </div>
-                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 pt-1 border-t border-blue-200 dark:border-blue-900/40">
-                                      <div className="flex justify-between">
-                                        <span>Komisyon (%{(() => {
-                                          const raw = Number(row.commissionRate ?? 0.04) * 100;
-                                          return raw % 1 === 0 ? raw.toFixed(1) : String(Number(raw.toFixed(3)));
-                                        })()}):</span>
-                                        <span className="font-mono text-red-500">-{(Number(row.salePrice || 0) * Number(row.commissionRate ?? 0.04)).toFixed(2)} ₺</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span>Kargo (KDV Dahil):</span>
-                                        <span className="font-mono text-red-500">-{(Number(row.cargoBase || 0) * (1 + Number(row.cargoVatRate || 0.20))).toFixed(2)} ₺</span>
-                                      </div>
-                                      {Number(row.cargoBase || 0) > 0 && (
-                                        <div className="flex justify-between text-[10px] text-slate-400 pl-1.5">
-                                          <span>↳ Kargo Matrahı:</span>
-                                          <span className="font-mono">{Number(row.cargoBase).toFixed(2)} ₺</span>
-                                        </div>
-                                      )}
-                                      {Number(row.extraExpense) > 0 && (
-                                        <div className="flex justify-between">
-                                          <span>Ekstra Gider:</span>
-                                          <span className="font-mono text-red-500">-{Number(row.extraExpense).toFixed(2)} ₺</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Step 3: Tax & Partner Share */}
-                                  <div className="p-3.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/40 space-y-2">
-                                    <span className="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-400 block">3. Vergi & Ortak Payı (O)</span>
-                                    <div className="text-xl font-black font-mono text-purple-600 dark:text-purple-400">
-                                      {Number(row.partnerTotalShare).toFixed(2)} ₺
-                                    </div>
-                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 pt-1 border-t border-purple-200 dark:border-purple-900/40">
-                                      <div className="flex justify-between">
-                                        <span>Net KDV Borcu (M):</span>
-                                        <span className="font-mono">{Number(row.netVat).toFixed(2)} ₺</span>
-                                      </div>
-                                      <div className="flex justify-between">
-                                        <span>Gelir Vergisi (%20 N):</span>
-                                        <span className="font-mono">{Number(row.incomeTax).toFixed(2)} ₺</span>
-                                      </div>
-                                      {Number(row.partnerFixed) > 0 && (
-                                        <div className="flex justify-between">
-                                          <span>Ortak Sabit Pay:</span>
-                                          <span className="font-mono">{Number(row.partnerFixed).toFixed(2)} ₺</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Step 4: Net Payout & Profit */}
-                                  <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/25 border border-emerald-200 dark:border-emerald-500/30 space-y-2">
-                                    <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 block">4. Sizin Net Kazancınız</span>
-                                    <div className="flex items-baseline justify-between">
-                                      <span className="text-xs text-slate-500">Kalan Alacak (P):</span>
-                                      <span className="text-base font-black font-mono text-emerald-600 dark:text-emerald-400">
-                                        {Number(row.myReceivable).toFixed(2)} ₺
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>Komisyon (%{((Number(row.commissionRate ?? 0.04)) * 100).toFixed(1)}):</span>
+                                      <span className="font-mono text-red-500">
+                                        -{safeFormat((Number(row.salePrice || 0) * Number(row.commissionRate || 0.04)))}
                                       </span>
                                     </div>
-                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 pt-1 border-t border-emerald-200 dark:border-emerald-500/30">
-                                      <div className="flex justify-between">
-                                        <span>Filament & Baskı Maliyeti:</span>
-                                        <span className="font-mono text-red-500">-{Number(row.realCost || 0).toFixed(2)} ₺</span>
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>Kargo (KDV Dahil):</span>
+                                      <span className="font-mono text-red-500">
+                                        -{safeFormat(cargoTotal)}
+                                      </span>
+                                    </div>
+                                    {Number(row.cargoBase || 0) > 0 && (
+                                      <div className="flex justify-between text-[10px] text-slate-400 pl-2">
+                                        <span>Matrah: {safeFormat(row.cargoBase)} + KDV %20</span>
+                                        <span className="font-mono">{safeFormat(Number(row.cargoBase || 0) * 0.20)}</span>
                                       </div>
-                                      <div className="flex justify-between font-bold text-xs pt-1 border-t border-slate-200 dark:border-slate-700">
-                                        <span className="text-cyan-800 dark:text-cyan-400">TEMİZ NET KÂR (Q):</span>
-                                        <span className="font-mono text-cyan-600 dark:text-cyan-400 font-extrabold">+{Number(row.myNetProfit).toFixed(2)} ₺</span>
+                                    )}
+                                    {Number(row.extraExpense || 0) > 0 && (
+                                      <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                        <span>Ek Masraf:</span>
+                                        <span className="font-mono text-red-500">-{safeFormat(row.extraExpense)}</span>
                                       </div>
+                                    )}
+                                    <div className="flex justify-between font-bold pt-1.5 border-t border-slate-200 dark:border-slate-700 text-blue-600 dark:text-blue-400">
+                                      <span>Trendyol Hakediş:</span>
+                                      <span className="font-mono">{safeFormat(row.hakedis)}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Col 2: Taxes & Partner */}
+                                  <div className="space-y-1.5 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
+                                    <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 block mb-1">
+                                      2. Vergi & Ortaklık Payı
+                                    </span>
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>Net KDV Borcu:</span>
+                                      <span className="font-mono">{safeFormat(row.netVat)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>Gelir Vergisi (Stopaj):</span>
+                                      <span className="font-mono">{safeFormat(row.incomeTax)}</span>
+                                    </div>
+                                    {Number(row.partnerFixed || 0) > 0 && (
+                                      <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                        <span>Ortak Sabit Payı:</span>
+                                        <span className="font-mono">{safeFormat(row.partnerFixed)}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex justify-between font-bold pt-1.5 border-t border-slate-200 dark:border-slate-700 text-purple-600 dark:text-purple-400">
+                                      <span>Toplam Ortak Payı:</span>
+                                      <span className="font-mono">{safeFormat(row.partnerTotalShare)}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Col 3: Profit */}
+                                  <div className="space-y-1.5 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
+                                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block mb-1">
+                                      3. Sizin Net Kazancınız
+                                    </span>
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>Ortaktan Alacağınız:</span>
+                                      <span className="font-mono font-semibold">{safeFormat(row.myReceivable)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                                      <span>Filament / Maliyet:</span>
+                                      <span className="font-mono text-slate-400">-{safeFormat(row.realCost)}</span>
+                                    </div>
+                                    <div className="flex justify-between font-bold pt-1.5 border-t border-slate-200 dark:border-slate-700 text-cyan-600 dark:text-cyan-400 text-sm">
+                                      <span>Kendi Net Kârınız:</span>
+                                      <span className="font-mono">{safeFormat(row.myNetProfit)}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -935,80 +683,6 @@ export default function TrendyolFinanceView({
                 })
               )}
             </tbody>
-
-            {/* TABLE FOOTER (ACTIVE TOTALS) */}
-            <tfoot className="bg-slate-100 dark:bg-slate-950 font-bold border-t-2 border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white">
-              {isCompactMode ? (
-                <tr>
-                  <td colSpan="2" className="py-4 px-3 text-left text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px]">
-                    TOPLAM ({activeItems.length} Kalem)
-                  </td>
-
-                  <td className="py-4 px-3 font-mono font-bold text-slate-800 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800">
-                    <span className="text-[10px] text-slate-400 font-normal block">Brüt Ciro</span>
-                    {totalGrossSale.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </td>
-
-                  <td className="py-4 px-3 text-blue-600 dark:text-blue-400 text-sm font-mono border-r border-slate-200 dark:border-slate-800">
-                    <span className="text-[10px] text-blue-500/70 font-normal block">Hakediş (L)</span>
-                    {totalHakedis.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </td>
-
-                  <td className="py-4 px-3 text-purple-600 dark:text-purple-400 text-sm font-mono border-r border-slate-200 dark:border-slate-800">
-                    <span className="text-[10px] text-purple-500/70 font-normal block">Ortak Payı (O)</span>
-                    {totalPartnerShare.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </td>
-
-                  <td className="py-4 px-3 text-emerald-600 dark:text-emerald-400 text-base font-black font-mono">
-                    <span className="text-[10px] text-emerald-500/70 font-normal block">Alacağınız (P)</span>
-                    {totalReceivable.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </td>
-
-                  <td className="py-4 px-3 text-cyan-600 dark:text-cyan-400 text-base font-black font-mono border-r border-slate-200 dark:border-slate-800">
-                    <span className="text-[10px] text-cyan-500/70 font-normal block">Net Kârınız (Q)</span>
-                    {totalNetProfit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </td>
-
-                  <td></td>
-                </tr>
-              ) : (
-                <tr>
-                  <td colSpan="3" className="py-4 px-3 text-right text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px]">
-                    TOPLAM (Aktif Dahil Edilenler - {activeItems.length} Kalem):
-                  </td>
-                  
-                  <td colSpan="3" className="py-4 px-3 text-slate-400 font-normal text-right">
-                    Brüt Ciro: <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{totalGrossSale.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</span>
-                  </td>
-
-                  <td className="py-4 px-3 text-blue-600 dark:text-blue-400 text-sm font-mono border-r border-slate-200 dark:border-slate-800">
-                    {totalHakedis.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </td>
-
-                  <td className="py-4 px-3 text-purple-600 dark:text-purple-300 font-mono">
-                    {totalNetVat.toFixed(2)} ₺
-                  </td>
-
-                  <td className="py-4 px-3 text-purple-600 dark:text-purple-300 font-mono">
-                    {totalIncomeTax.toFixed(2)} ₺
-                  </td>
-
-                  <td className="py-4 px-3 text-purple-600 dark:text-purple-400 text-sm font-mono border-r border-slate-200 dark:border-slate-800">
-                    {totalPartnerShare.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </td>
-
-                  <td className="py-4 px-3 text-emerald-600 dark:text-emerald-400 text-base font-black font-mono">
-                    {totalReceivable.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </td>
-
-                  <td className="py-4 px-3 text-cyan-600 dark:text-cyan-400 text-base font-black font-mono border-r border-slate-200 dark:border-slate-800">
-                    {totalNetProfit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                  </td>
-
-                  <td></td>
-                </tr>
-              )}
-            </tfoot>
           </table>
         </div>
       </div>

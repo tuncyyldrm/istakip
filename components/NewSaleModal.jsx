@@ -38,8 +38,10 @@ export default function NewSaleModal({
   // Helper to parse strings cleanly with comma or period
   const parseNumeric = (val) => {
     if (val === undefined || val === null || val === '') return 0;
-    if (typeof val === 'number') return val;
-    const clean = String(val).replace(',', '.').trim();
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    let clean = String(val).replace(',', '.').trim();
+    if (clean === '-' || clean === '+') return 0;
+    if (clean.startsWith('--')) clean = clean.replace(/^-+/, '-');
     const parsed = parseFloat(clean);
     return isNaN(parsed) ? 0 : parsed;
   };
@@ -55,9 +57,11 @@ export default function NewSaleModal({
       const isExpRow = Boolean(saleToEdit.isExpenseRow);
 
       if (isDeductionRow) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEntryType('deduction');
         setDate(saleToEdit.date || today);
-        setDeductionAmount(String(Math.abs(Number(saleToEdit.deduction) || 242.51)));
+        const ded = Number(saleToEdit.deduction);
+        setDeductionAmount(String(!isNaN(ded) ? (ded < 0 ? ded : -ded) : -242.51));
         setExpenseTitle(saleToEdit.expenseTitle || 'İade Kesintisi');
       } else if (isExpRow) {
         setEntryType('expense');
@@ -87,7 +91,7 @@ export default function NewSaleModal({
       setEntryType('sale');
       setDate(today);
       setExpenseTitle('');
-      setDeductionAmount('242.51');
+      setDeductionAmount('-242.51');
       setSalePrice('450');
       setCommissionRate('4.0');
       setRealCost('55');
@@ -306,18 +310,17 @@ export default function NewSaleModal({
                 <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1 flex items-center justify-between">
                   <span>Kesilecek Tutar (₺)</span>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
-                    İster 242.51, ister -242.51 yazabilirsiniz
+                    Doğrudan -242.51 veya 242.51 yazabilirsiniz
                   </span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-red-500 font-bold text-sm">-</span>
                   <input
                     type="text"
                     inputMode="decimal"
-                    placeholder="242.51"
+                    placeholder="-242.51"
                     value={deductionAmount}
                     onChange={(e) => setDeductionAmount(e.target.value.replace(',', '.'))}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-red-300 dark:border-red-800/80 rounded-xl pl-8 pr-3 py-2 text-sm font-extrabold text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-red-300 dark:border-red-800/80 rounded-xl px-3.5 py-2 text-sm font-bold font-mono text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition"
                     required
                   />
                 </div>
