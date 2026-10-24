@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Clock, UploadCloud, Trash2, Image as ImageIcon } from 'lucide-react';
+import { X, Clock, UploadCloud, Trash2, Image as ImageIcon, Sparkles, FileText, Tag, User } from 'lucide-react';
 import { calculateCost } from '@/lib/api';
 
 export default function NewOrderModal({ 
@@ -36,9 +36,10 @@ export default function NewOrderModal({
       setFormData({
         ...orderToEdit,
         date: orderToEdit.date || today,
-        printHours: orderToEdit.printHours || 0,
-        printMinutes: orderToEdit.printMinutes || 0,
-        price: orderToEdit.price || 0,
+        printHours: orderToEdit.printHours ?? 0,
+        printMinutes: orderToEdit.printMinutes ?? 0,
+        price: orderToEdit.price ?? 0,
+        notes: orderToEdit.notes || '',
         image: orderToEdit.image || ''
       });
     } else if (initialValues) {
@@ -50,10 +51,10 @@ export default function NewOrderModal({
         description: initialValues.description || '',
         color: initialValues.color || 'Beyaz',
         status: initialValues.status || 'Modelleme',
-        printHours: initialValues.printHours || 2,
-        printMinutes: initialValues.printMinutes || 30,
-        price: initialValues.price || 0,
-        notes: '',
+        printHours: initialValues.printHours ?? 2,
+        printMinutes: initialValues.printMinutes ?? 30,
+        price: initialValues.price ?? 180,
+        notes: initialValues.notes || '',
         image: initialValues.image || ''
       });
     } else {
@@ -103,7 +104,6 @@ export default function NewOrderModal({
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        // Max 800px on either side
         const maxDimension = 800;
         let width = img.width;
         let height = img.height;
@@ -122,7 +122,6 @@ export default function NewOrderModal({
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Compress to WebP with 0.8 quality (~50-100 KB)
         try {
           const webpDataUrl = canvas.toDataURL('image/webp', 0.8);
           setFormData(prev => ({ ...prev, image: webpDataUrl }));
@@ -152,37 +151,57 @@ export default function NewOrderModal({
   }
 
   const channels = settings?.channels || ['lokal', 'dolap', 'trendyol', 'web', 'özel'];
-  const colors = ['Beyaz', 'Siyah', 'Gri', 'Kırmızı', 'Mavi', 'Yeşil', 'Turuncu', 'Sarı'];
+  const colors = [
+    'Beyaz', 'Siyah', 'Gri', 'Kırmızı', 'Mavi', 'Yeşil', 'Turuncu', 'Sarı', 
+    'Gümüş / İpek', 'Altın / Bronz', 'Şeffaf / Naturel'
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh] transition-colors">
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <h3 className="font-extrabold text-gray-900 dark:text-white text-base">
-            {orderToEdit ? 'Siparişi Düzenle' : 'Yeni 3D Baskı Siparişi Ekle'}
-          </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 dark:hover:text-white p-1">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[92vh] transition-colors">
+        
+        {/* Modal Header */}
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
+            <h3 className="font-extrabold text-slate-900 dark:text-white text-base">
+              {orderToEdit ? `Siparişi Düzenle (${orderToEdit.id})` : 'Yeni 3D Baskı Siparişi Ekle'}
+            </h3>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg transition"
+            title="Kapat"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-          <div className="grid grid-cols-2 gap-3">
+        {/* Modal Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1 scrollbar-thin">
+          
+          {/* Row 1: Date & Channel */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">Sipariş Tarihi</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Sipariş Tarihi
+              </label>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 transition font-mono"
+                required
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">Satış Kanalı</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Satış Kanalı
+              </label>
               <select
                 value={formData.channel}
                 onChange={(e) => setFormData({ ...formData, channel: e.target.value })}
-                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white uppercase font-bold focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white uppercase font-bold focus:outline-none focus:border-orange-500 transition cursor-pointer"
               >
                 {channels.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -191,56 +210,64 @@ export default function NewOrderModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Row 2: Customer & Title */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">Müşteri / Kullanıcı Adı</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Müşteri / Kullanıcı Adı
+              </label>
               <input
                 type="text"
-                placeholder="Örn: dolap8058575, ezm..."
+                placeholder="Örn: dolap8058575, ezm, mehmet..."
                 value={formData.customer}
                 onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
-                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 transition"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">İş / Marka / Kategori</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                İş / Model Başlığı <span className="text-orange-500">*</span>
+              </label>
               <input
                 type="text"
-                placeholder="Örn: Fiat, Bina, Ayraç, Organizer..."
+                placeholder="Örn: Fiat Logo, Bina Maketi, Ayraç..."
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500 transition"
                 required
               />
             </div>
           </div>
 
+          {/* Description */}
           <div>
-            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">Açıklama / Model Detayı</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              Model Detayı / Açıklama
+            </label>
             <input
               type="text"
               placeholder="Örn: Egea Cross, Panpa 1.4, Yaşasın Cumhuriyet 26 Adet..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 transition"
             />
           </div>
 
-          {/* Model Görseli / 3D Render Yükleme Alanı */}
+          {/* Image Upload Area */}
           <div>
-            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
               Model Görseli / 3D Render (Opsiyonel)
             </label>
 
             {formData.image ? (
-              <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 p-2.5 flex items-center gap-3">
+              <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 p-2.5 flex items-center gap-3 shadow-inner">
                 <img
                   src={formData.image}
                   alt="Önizleme"
-                  className="w-14 h-14 rounded-xl object-cover border border-gray-200 dark:border-gray-600 shrink-0 shadow-sm"
+                  className="w-14 h-14 rounded-xl object-cover border border-slate-200 dark:border-slate-600 shrink-0 shadow-sm"
                 />
                 <div className="flex-1 min-w-0">
-                  <span className="text-xs font-bold text-gray-900 dark:text-white block">Görsel Yüklendi</span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block">Görsel Yüklendi</span>
                   <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium block">
                     ✓ WebP olarak optimize edildi (~100 KB)
                   </span>
@@ -248,14 +275,14 @@ export default function NewOrderModal({
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="p-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold transition"
+                  className="p-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 text-xs font-semibold transition"
                   title="Görseli Kaldır"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             ) : (
-              <label className="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-cyan-500 rounded-2xl p-3 flex items-center justify-center gap-2 cursor-pointer transition bg-gray-50/50 dark:bg-gray-800/30 group">
+              <label className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-orange-500 dark:hover:border-orange-400 rounded-2xl p-3 flex items-center justify-center gap-2 cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30 group">
                 <input
                   type="file"
                   accept="image/*"
@@ -263,40 +290,62 @@ export default function NewOrderModal({
                   className="hidden"
                 />
                 {compressing ? (
-                  <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-cyan-400">
-                    <div className="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                  <div className="flex items-center gap-2 text-xs text-orange-600 dark:text-orange-400">
+                    <div className="w-4 h-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin"></div>
                     <span>Görsel optimize ediliyor...</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400">
-                    <UploadCloud className="w-4 h-4 shrink-0 text-blue-500 dark:text-cyan-400" />
+                  <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 group-hover:text-orange-600 dark:group-hover:text-orange-400">
+                    <UploadCloud className="w-4 h-4 shrink-0 text-orange-500" />
                     <span className="font-semibold">Fotoğraf veya 3D Render Yükle</span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">(Otomatik 100 KB WebP)</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">(Otomatik WebP)</span>
                   </div>
                 )}
               </label>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Color & Status */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">Filament Rengi</label>
-              <select
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white font-medium focus:outline-none focus:border-cyan-500"
-              >
-                {colors.map((col) => (
-                  <option key={col} value={col}>{col}</option>
-                ))}
-              </select>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Filament Rengi
+              </label>
+              <div className="relative">
+                <select
+                  value={colors.includes(formData.color) ? formData.color : 'Özel'}
+                  onChange={(e) => {
+                    if (e.target.value !== 'Özel') {
+                      setFormData({ ...formData, color: e.target.value });
+                    }
+                  }}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-orange-500 transition cursor-pointer"
+                >
+                  {colors.map((col) => (
+                    <option key={col} value={col}>{col}</option>
+                  ))}
+                  <option value="Özel">Diğer / Özel Renk</option>
+                </select>
+              </div>
+              {!colors.includes(formData.color) && (
+                <input
+                  type="text"
+                  placeholder="Renk adı yazın..."
+                  value={formData.color}
+                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                  className="mt-1.5 w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
+                />
+              )}
             </div>
+
             <div>
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block mb-1">Üretim Durumu</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Üretim Durumu
+              </label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white font-bold focus:outline-none focus:border-cyan-500"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-orange-500 transition cursor-pointer"
               >
                 <option value="Modelleme">Modelleme</option>
                 <option value="Baskıya Hazır">Baskıya Hazır</option>
@@ -307,68 +356,85 @@ export default function NewOrderModal({
             </div>
           </div>
 
-          <div className="bg-gray-50 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-200 dark:border-gray-700/60 space-y-3">
-            <div className="flex items-center justify-between text-xs font-bold text-gray-800 dark:text-gray-300">
+          {/* Special Notes & Instructions (Previously Missing) */}
+          <div>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              Sipariş & Üretim Notu (Opsiyonel)
+            </label>
+            <textarea
+              rows="2"
+              placeholder="Örn: Dolgu %25, nozül 0.4mm, vida yuvası temizlensin, müşteri acil kargo rica etti..."
+              value={formData.notes || ''}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 transition resize-none"
+            />
+          </div>
+
+          {/* Time & Price Calculator Strip */}
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-3">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-300">
               <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400" />
-                <span>Baskı Süresi & Fiyat</span>
+                <Clock className="w-3.5 h-3.5 text-orange-500" />
+                <span>Baskı Süresi & Satış Fiyatı</span>
               </span>
-              <label className="flex items-center gap-1.5 text-[11px] text-blue-600 dark:text-cyan-400 cursor-pointer font-medium">
+              <label className="flex items-center gap-1.5 text-[11px] text-orange-600 dark:text-orange-400 cursor-pointer font-medium select-none">
                 <input
                   type="checkbox"
                   checked={autoCalculatePrice}
                   onChange={(e) => setAutoCalculatePrice(e.target.checked)}
-                  className="rounded bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-blue-600"
+                  className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-orange-600 focus:ring-0 cursor-pointer"
                 />
                 <span>Formülle Otomatik Hesapla</span>
               </label>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2.5">
               <div>
-                <label className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold block mb-1">Saat</label>
+                <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-1">Saat</label>
                 <input
                   type="number"
                   min="0"
-                  value={formData.printHours}
-                  onChange={(e) => setFormData({ ...formData, printHours: Number(e.target.value) })}
-                  className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl px-2.5 py-1.5 text-xs text-gray-900 dark:text-white font-bold focus:outline-none focus:border-cyan-500"
+                  value={formData.printHours === 0 ? '0' : formData.printHours || ''}
+                  onChange={(e) => setFormData({ ...formData, printHours: e.target.value === '' ? 0 : Number(e.target.value) })}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-orange-500"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold block mb-1">Dakika</label>
+                <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-1">Dakika</label>
                 <input
                   type="number"
                   min="0"
                   max="59"
-                  value={formData.printMinutes}
-                  onChange={(e) => setFormData({ ...formData, printMinutes: Number(e.target.value) })}
-                  className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl px-2.5 py-1.5 text-xs text-gray-900 dark:text-white font-bold focus:outline-none focus:border-cyan-500"
+                  value={formData.printMinutes === 0 ? '0' : formData.printMinutes || ''}
+                  onChange={(e) => setFormData({ ...formData, printMinutes: e.target.value === '' ? 0 : Number(e.target.value) })}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:border-orange-500"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold block mb-1">Satış Fiyatı (₺)</label>
+                <label className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold block mb-1">Fiyat (₺)</label>
                 <input
                   type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                  className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl px-2.5 py-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-extrabold focus:outline-none focus:border-emerald-500"
+                  step="0.01"
+                  value={formData.price === 0 ? '0' : formData.price || ''}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value === '' ? 0 : Number(e.target.value) })}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-mono font-black focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end gap-2">
+          {/* Form Actions */}
+          <div className="pt-2 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold text-xs px-4 py-2 rounded-xl transition"
+              className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs px-4 py-2.5 rounded-xl transition"
             >
               İptal
             </button>
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-5 py-2 rounded-xl transition shadow-lg shadow-blue-600/30"
+              className="bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg shadow-orange-600/25 active:scale-95"
             >
               {orderToEdit ? 'Değişiklikleri Kaydet' : 'Siparişi Kaydet'}
             </button>
