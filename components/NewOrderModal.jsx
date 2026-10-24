@@ -33,6 +33,7 @@ export default function NewOrderModal({
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     if (orderToEdit) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         ...orderToEdit,
         date: orderToEdit.date || today,

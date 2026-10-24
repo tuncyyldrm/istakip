@@ -28,7 +28,8 @@ import {
   ArrowUpDown,
   Calendar,
   Layers,
-  Send
+  Send,
+  Tag
 } from 'lucide-react';
 
 export default function OrdersView({ 
@@ -108,16 +109,18 @@ export default function OrdersView({
 
   // Filtered orders
   const filteredOrders = orders.filter((order) => {
-    const q = searchQuery.toLowerCase().trim();
+    if (!order) return false;
+    const q = (searchQuery || '').toLowerCase().trim();
     const matchesSearch = !q ||
-      order.title?.toLowerCase().includes(q) ||
-      order.description?.toLowerCase().includes(q) ||
-      order.customer?.toLowerCase().includes(q) ||
-      order.color?.toLowerCase().includes(q) ||
-      order.notes?.toLowerCase().includes(q) ||
-      order.id?.toLowerCase().includes(q);
+      Boolean(order.title && order.title.toLowerCase().includes(q)) ||
+      Boolean(order.description && order.description.toLowerCase().includes(q)) ||
+      Boolean(order.customer && order.customer.toLowerCase().includes(q)) ||
+      Boolean(order.color && order.color.toLowerCase().includes(q)) ||
+      Boolean(order.notes && order.notes.toLowerCase().includes(q)) ||
+      Boolean(order.id && String(order.id).toLowerCase().includes(q));
 
-    const matchesChannel = selectedChannel === 'ALL' || order.channel?.toLowerCase() === selectedChannel.toLowerCase();
+    const orderChannel = (order.channel || 'lokal').toLowerCase();
+    const matchesChannel = selectedChannel === 'ALL' || orderChannel === selectedChannel.toLowerCase();
     
     let matchesStatus = true;
     if (selectedStatus === 'ACTIVE') {
@@ -429,7 +432,7 @@ export default function OrdersView({
             {channels.map((ch) => {
               const count = ch === 'ALL' 
                 ? orders.length 
-                : orders.filter(o => o.channel?.toLowerCase() === ch.toLowerCase()).length;
+                : orders.filter(o => (o.channel || 'lokal').toLowerCase() === ch.toLowerCase()).length;
               const isSelected = selectedChannel === ch;
 
               return (
