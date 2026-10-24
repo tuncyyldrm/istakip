@@ -23,7 +23,9 @@ import {
   CheckCircle2,
   DollarSign,
   HelpCircle,
-  X
+  X,
+  LayoutList,
+  SlidersHorizontal
 } from 'lucide-react';
 
 export default function TrendyolFinanceView({ 
@@ -36,7 +38,8 @@ export default function TrendyolFinanceView({
   const [filterActiveOnly, setFilterActiveOnly] = useState(false);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState('ALL'); // 'ALL' | 'SALES' | 'DEDUCTIONS' | 'EXPENSES'
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedRowId, setExpandedRowId] = useState(null);
+  const [isCompactMode, setIsCompactMode] = useState(true);
+  const [expandedRows, setExpandedRows] = useState({});
   const [sortBy, setSortBy] = useState('date_desc'); // 'date_desc' | 'date_asc' | 'profit_desc'
   const [copyFeedback, setCopyFeedback] = useState(false);
 
@@ -107,7 +110,24 @@ export default function TrendyolFinanceView({
 
   // Toggle row expansion for waterfall detail
   function toggleRowExpand(id) {
-    setExpandedRowId(prev => prev === id ? null : id);
+    setExpandedRows(prev => {
+      const next = { ...prev };
+      if (next[id]) delete next[id];
+      else next[id] = true;
+      return next;
+    });
+  }
+
+  const isAllExpanded = processedList.length > 0 && processedList.every(r => expandedRows[r.id]);
+
+  function toggleExpandAll() {
+    if (isAllExpanded) {
+      setExpandedRows({});
+    } else {
+      const all = {};
+      processedList.forEach(r => { all[r.id] = true; });
+      setExpandedRows(all);
+    }
   }
 
   // Export to Excel / CSV with Turkish character support (UTF-8 BOM)
@@ -388,70 +408,167 @@ export default function TrendyolFinanceView({
             />
             <span className="text-[11px] font-semibold">Sadece Dahil Olanlar ({activeItems.length})</span>
           </label>
+
+          {/* View Mode Toggle: Kompakt (Önerilen) vs Geniş */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700/80">
+            <button
+              type="button"
+              onClick={() => setIsCompactMode(true)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+                isCompactMode
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Kaydırma gerektirmeyen kompakt görünüm (Önerilen)"
+            >
+              <LayoutList className="w-3.5 h-3.5" />
+              <span>Kompakt</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsCompactMode(false)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+                !isCompactMode
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Tüm 13 sütunu gösteren geniş Excel tablosu"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Geniş Tablo</span>
+            </button>
+          </div>
+
+          {/* Expand/Collapse All Details Button */}
+          <button
+            type="button"
+            onClick={toggleExpandAll}
+            className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 whitespace-nowrap select-none hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+            title={isAllExpanded ? "Tüm ayrıntıları kapat" : "Tüm satırların ayrıntılarını aç"}
+          >
+            {isAllExpanded ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
+            <span className="text-[11px] font-semibold">{isAllExpanded ? 'Ayrıntıları Kapat' : 'Tüm Ayrıntıları Aç'}</span>
+          </button>
         </div>
       </div>
 
-      {/* 5. FINANCIAL TABLE WITH SUPER-HEADER GROUPING */}
+      {/* 5. FINANCIAL TABLE WITH RESPONSIVE COMPACT / EXPANDED MODE */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm transition-colors">
         
+        {/* Helper Hint */}
+        {isCompactMode && (
+          <div className="px-4 py-2 bg-emerald-50/50 dark:bg-emerald-950/20 border-b border-emerald-100 dark:border-emerald-900/30 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <strong>Kompakt Görünüm Aktif:</strong> Ana rakamlar listelenir. Satıra veya <strong>Ayrıntılar</strong> butonuna tıklayarak komisyon, kargo ve vergi dökümünü görebilirsiniz.
+            </span>
+            <span className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 hidden sm:inline">Kaydırma gerektirmez</span>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs whitespace-nowrap">
             
             {/* SUPER HEADER ROW (GROUPINGS) */}
             <thead className="bg-slate-100 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-              <tr>
-                <th colSpan="3" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left">
-                  📦 Sipariş / İşlem Bilgisi
-                </th>
-                <th colSpan="4" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-blue-600 dark:text-blue-400">
-                  🏢 Pazar Yeri & Lojistik (Trendyol)
-                </th>
-                <th colSpan="3" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-purple-600 dark:text-purple-400">
-                  🏛️ Vergi & Ortaklık Payı (O Sütunu)
-                </th>
-                <th colSpan="2" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-emerald-600 dark:text-emerald-400">
-                  💰 Sizin Net Kazancınız
-                </th>
-                <th className="py-2 px-3 text-right">
-                  İşlem
-                </th>
-              </tr>
+              {isCompactMode ? (
+                <tr>
+                  <th colSpan="2" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left">
+                    📦 Sipariş / İşlem Bilgisi
+                  </th>
+                  <th colSpan="2" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-blue-600 dark:text-blue-400">
+                    🏢 Satış & Trendyol Geliri
+                  </th>
+                  <th colSpan="1" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-purple-600 dark:text-purple-400">
+                    🏛️ Vergi / Ortak
+                  </th>
+                  <th colSpan="2" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-emerald-600 dark:text-emerald-400">
+                    💰 Net Kazancınız
+                  </th>
+                  <th className="py-2 px-3 text-right">
+                    Ayrıntılar & İşlem
+                  </th>
+                </tr>
+              ) : (
+                <tr>
+                  <th colSpan="3" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left">
+                    📦 Sipariş / İşlem Bilgisi
+                  </th>
+                  <th colSpan="4" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-blue-600 dark:text-blue-400">
+                    🏢 Pazar Yeri & Lojistik (Trendyol)
+                  </th>
+                  <th colSpan="3" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-purple-600 dark:text-purple-400">
+                    🏛️ Vergi & Ortaklık Payı (O Sütunu)
+                  </th>
+                  <th colSpan="2" className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-left text-emerald-600 dark:text-emerald-400">
+                    💰 Sizin Net Kazancınız
+                  </th>
+                  <th className="py-2 px-3 text-right">
+                    İşlem
+                  </th>
+                </tr>
+              )}
 
               {/* SUB HEADER ROW (INDIVIDUAL COLUMNS) */}
-              <tr className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-300">
-                <th className="py-2.5 px-3 text-center w-10">Dahil</th>
-                <th className="py-2.5 px-3">Tarih / Açıklama</th>
-                <th className="py-2.5 px-3 border-r border-slate-200 dark:border-slate-800">Satış Fiyatı</th>
-                
-                <th className="py-2.5 px-3">Komisyon</th>
-                <th className="py-2.5 px-3">Maliyet (₺)</th>
-                <th className="py-2.5 px-3">Kargo (KDV'li)</th>
-                <th className="py-2.5 px-3 text-blue-600 dark:text-blue-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
-                  Hakediş (L)
-                </th>
+              {isCompactMode ? (
+                <tr className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-300">
+                  <th className="py-2.5 px-3 text-center w-10">Dahil</th>
+                  <th className="py-2.5 px-3">Tarih / Kayıt Açıklaması</th>
+                  <th className="py-2.5 px-3 border-r border-slate-200 dark:border-slate-800">Satış / Kesinti</th>
+                  
+                  <th className="py-2.5 px-3 text-blue-600 dark:text-blue-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
+                    Hakediş (L)
+                  </th>
 
-                <th className="py-2.5 px-3 text-purple-600 dark:text-purple-300">Net KDV (M)</th>
-                <th className="py-2.5 px-3 text-purple-600 dark:text-purple-300">Gelir V. (N)</th>
-                <th className="py-2.5 px-3 text-purple-600 dark:text-purple-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
-                  Ortak Payı (O)
-                </th>
+                  <th className="py-2.5 px-3 text-purple-600 dark:text-purple-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
+                    Ortak Payı (O)
+                  </th>
 
-                <th className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-extrabold">
-                  Alacağınız (P)
-                </th>
-                <th className="py-2.5 px-3 text-cyan-600 dark:text-cyan-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
-                  Net Kârınız (Q)
-                </th>
+                  <th className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-extrabold">
+                    Alacağınız (P)
+                  </th>
+                  <th className="py-2.5 px-3 text-cyan-600 dark:text-cyan-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
+                    Net Kârınız (Q)
+                  </th>
 
-                <th className="py-2.5 px-3 text-right">Yönet</th>
-              </tr>
+                  <th className="py-2.5 px-3 text-right">Ayrıntılar & Yönet</th>
+                </tr>
+              ) : (
+                <tr className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-300">
+                  <th className="py-2.5 px-3 text-center w-10">Dahil</th>
+                  <th className="py-2.5 px-3">Tarih / Açıklama</th>
+                  <th className="py-2.5 px-3 border-r border-slate-200 dark:border-slate-800">Satış Fiyatı</th>
+                  
+                  <th className="py-2.5 px-3">Komisyon</th>
+                  <th className="py-2.5 px-3">Maliyet (₺)</th>
+                  <th className="py-2.5 px-3">Kargo (KDV'li)</th>
+                  <th className="py-2.5 px-3 text-blue-600 dark:text-blue-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
+                    Hakediş (L)
+                  </th>
+
+                  <th className="py-2.5 px-3 text-purple-600 dark:text-purple-300">Net KDV (M)</th>
+                  <th className="py-2.5 px-3 text-purple-600 dark:text-purple-300">Gelir V. (N)</th>
+                  <th className="py-2.5 px-3 text-purple-600 dark:text-purple-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
+                    Ortak Payı (O)
+                  </th>
+
+                  <th className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-extrabold">
+                    Alacağınız (P)
+                  </th>
+                  <th className="py-2.5 px-3 text-cyan-600 dark:text-cyan-400 font-extrabold border-r border-slate-200 dark:border-slate-800">
+                    Net Kârınız (Q)
+                  </th>
+
+                  <th className="py-2.5 px-3 text-right">Yönet</th>
+                </tr>
+              )}
             </thead>
 
             {/* TABLE BODY */}
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {processedList.length === 0 ? (
                 <tr>
-                  <td colSpan="13" className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
+                  <td colSpan={isCompactMode ? 8 : 13} className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
                     Kriterlere uygun finansal kayıt bulunamadı.
                   </td>
                 </tr>
@@ -459,7 +576,7 @@ export default function TrendyolFinanceView({
                 processedList.map((row) => {
                   const isExpense = row.isExpenseRow;
                   const isDeduction = Number(row.deduction) < 0;
-                  const isExpanded = expandedRowId === row.id;
+                  const isExpanded = Boolean(expandedRows[row.id]);
 
                   return (
                     <React.Fragment key={row.id}>
@@ -553,38 +670,48 @@ export default function TrendyolFinanceView({
                           )}
                         </td>
 
-                        {/* 4. Commission */}
-                        <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
-                          {isExpense || isDeduction ? '-' : `%${(() => {
-                            const raw = Number(row.commissionRate ?? 0.04) * 100;
-                            return raw % 1 === 0 ? raw.toFixed(1) : String(Number(raw.toFixed(3)));
-                          })()}`}
-                        </td>
+                        {/* WIDE-ONLY COLUMNS 4, 5, 6 */}
+                        {!isCompactMode && (
+                          <>
+                            {/* 4. Commission */}
+                            <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
+                              {isExpense || isDeduction ? '-' : `%${(() => {
+                                const raw = Number(row.commissionRate ?? 0.04) * 100;
+                                return raw % 1 === 0 ? raw.toFixed(1) : String(Number(raw.toFixed(3)));
+                              })()}`}
+                            </td>
 
-                        {/* 5. Real Cost */}
-                        <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
-                          {isExpense || isDeduction ? '-' : `${row.realCost ?? 0} ₺`}
-                        </td>
+                            {/* 5. Real Cost */}
+                            <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
+                              {isExpense || isDeduction ? '-' : `${row.realCost ?? 0} ₺`}
+                            </td>
 
-                        {/* 6. Cargo Total */}
-                        <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
-                          {isExpense || isDeduction ? '-' : `${(Number(row.cargoBase || 0) * (1 + Number(row.cargoVatRate || 0.20))).toFixed(2)} ₺`}
-                        </td>
+                            {/* 6. Cargo Total */}
+                            <td className="py-3 px-3 text-slate-500 dark:text-slate-400 font-mono">
+                              {isExpense || isDeduction ? '-' : `${(Number(row.cargoBase || 0) * (1 + Number(row.cargoVatRate || 0.20))).toFixed(2)} ₺`}
+                            </td>
+                          </>
+                        )}
 
                         {/* 7. Hakedis (L) */}
                         <td className="py-3 px-3 font-bold font-mono text-blue-600 dark:text-blue-400 border-r border-slate-100 dark:border-slate-800">
                           {isDeduction ? '-' : `${Number(row.hakedis || 0).toFixed(2)} ₺`}
                         </td>
 
-                        {/* 8. Net KDV (M) */}
-                        <td className="py-3 px-3 text-purple-600 dark:text-purple-300 font-mono">
-                          {isExpense || isDeduction ? '0.00 ₺' : `${Number(row.netVat || 0).toFixed(2)} ₺`}
-                        </td>
+                        {/* WIDE-ONLY COLUMNS 8, 9 */}
+                        {!isCompactMode && (
+                          <>
+                            {/* 8. Net KDV (M) */}
+                            <td className="py-3 px-3 text-purple-600 dark:text-purple-300 font-mono">
+                              {isExpense || isDeduction ? '0.00 ₺' : `${Number(row.netVat || 0).toFixed(2)} ₺`}
+                            </td>
 
-                        {/* 9. Income Tax (N) */}
-                        <td className="py-3 px-3 text-purple-600 dark:text-purple-300 font-mono">
-                          {isDeduction ? '-' : `${Number(row.incomeTax || 0).toFixed(2)} ₺`}
-                        </td>
+                            {/* 9. Income Tax (N) */}
+                            <td className="py-3 px-3 text-purple-600 dark:text-purple-300 font-mono">
+                              {isDeduction ? '-' : `${Number(row.incomeTax || 0).toFixed(2)} ₺`}
+                            </td>
+                          </>
+                        )}
 
                         {/* 10. Partner Total Share (O) */}
                         <td className="py-3 px-3 font-bold font-mono text-purple-600 dark:text-purple-400 border-r border-slate-100 dark:border-slate-800">
@@ -615,12 +742,17 @@ export default function TrendyolFinanceView({
 
                         {/* 13. Actions & Expand Chevron */}
                         <td className="py-3 px-3 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => toggleRowExpand(row.id)}
-                              className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                              title="Hesaplama detayını göster"
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-xs ${
+                                isExpanded
+                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-700'
+                              }`}
+                              title={isExpanded ? "Ayrıntıları Gizle" : "Ayrıntıları Göster"}
                             >
+                              <span>Ayrıntılar</span>
                               {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                             </button>
                             <button
@@ -644,7 +776,7 @@ export default function TrendyolFinanceView({
                       {/* INLINE WATERFALL DETAIL DRAWER FOR EXPANDED ROW */}
                       {isExpanded && (
                         <tr className="bg-slate-100/70 dark:bg-slate-950/80 border-y border-slate-200 dark:border-slate-800 text-xs">
-                          <td colSpan="13" className="p-4 sm:p-5">
+                          <td colSpan={isCompactMode ? 8 : 13} className="p-4 sm:p-5">
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-inner space-y-4">
                               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                                 <div className="flex items-center gap-2">
@@ -733,6 +865,12 @@ export default function TrendyolFinanceView({
                                         <span>Kargo (KDV Dahil):</span>
                                         <span className="font-mono text-red-500">-{(Number(row.cargoBase || 0) * (1 + Number(row.cargoVatRate || 0.20))).toFixed(2)} ₺</span>
                                       </div>
+                                      {Number(row.cargoBase || 0) > 0 && (
+                                        <div className="flex justify-between text-[10px] text-slate-400 pl-1.5">
+                                          <span>↳ Kargo Matrahı:</span>
+                                          <span className="font-mono">{Number(row.cargoBase).toFixed(2)} ₺</span>
+                                        </div>
+                                      )}
                                       {Number(row.extraExpense) > 0 && (
                                         <div className="flex justify-between">
                                           <span>Ekstra Gider:</span>
@@ -800,41 +938,76 @@ export default function TrendyolFinanceView({
 
             {/* TABLE FOOTER (ACTIVE TOTALS) */}
             <tfoot className="bg-slate-100 dark:bg-slate-950 font-bold border-t-2 border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white">
-              <tr>
-                <td colSpan="3" className="py-4 px-3 text-right text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px]">
-                  TOPLAM (Aktif Dahil Edilenler - {activeItems.length} Kalem):
-                </td>
-                
-                <td colSpan="3" className="py-4 px-3 text-slate-400 font-normal text-right">
-                  Brüt Ciro: <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{totalGrossSale.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</span>
-                </td>
+              {isCompactMode ? (
+                <tr>
+                  <td colSpan="2" className="py-4 px-3 text-left text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px]">
+                    TOPLAM ({activeItems.length} Kalem)
+                  </td>
 
-                <td className="py-4 px-3 text-blue-600 dark:text-blue-400 text-sm font-mono border-r border-slate-200 dark:border-slate-800">
-                  {totalHakedis.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                </td>
+                  <td className="py-4 px-3 font-mono font-bold text-slate-800 dark:text-slate-200 border-r border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-400 font-normal block">Brüt Ciro</span>
+                    {totalGrossSale.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </td>
 
-                <td className="py-4 px-3 text-purple-600 dark:text-purple-300 font-mono">
-                  {totalNetVat.toFixed(2)} ₺
-                </td>
+                  <td className="py-4 px-3 text-blue-600 dark:text-blue-400 text-sm font-mono border-r border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-blue-500/70 font-normal block">Hakediş (L)</span>
+                    {totalHakedis.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </td>
 
-                <td className="py-4 px-3 text-purple-600 dark:text-purple-300 font-mono">
-                  {totalIncomeTax.toFixed(2)} ₺
-                </td>
+                  <td className="py-4 px-3 text-purple-600 dark:text-purple-400 text-sm font-mono border-r border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-purple-500/70 font-normal block">Ortak Payı (O)</span>
+                    {totalPartnerShare.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </td>
 
-                <td className="py-4 px-3 text-purple-600 dark:text-purple-400 text-sm font-mono border-r border-slate-200 dark:border-slate-800">
-                  {totalPartnerShare.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                </td>
+                  <td className="py-4 px-3 text-emerald-600 dark:text-emerald-400 text-base font-black font-mono">
+                    <span className="text-[10px] text-emerald-500/70 font-normal block">Alacağınız (P)</span>
+                    {totalReceivable.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </td>
 
-                <td className="py-4 px-3 text-emerald-600 dark:text-emerald-400 text-base font-black font-mono">
-                  {totalReceivable.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                </td>
+                  <td className="py-4 px-3 text-cyan-600 dark:text-cyan-400 text-base font-black font-mono border-r border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-cyan-500/70 font-normal block">Net Kârınız (Q)</span>
+                    {totalNetProfit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </td>
 
-                <td className="py-4 px-3 text-cyan-600 dark:text-cyan-400 text-base font-black font-mono border-r border-slate-200 dark:border-slate-800">
-                  {totalNetProfit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                </td>
+                  <td></td>
+                </tr>
+              ) : (
+                <tr>
+                  <td colSpan="3" className="py-4 px-3 text-right text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[11px]">
+                    TOPLAM (Aktif Dahil Edilenler - {activeItems.length} Kalem):
+                  </td>
+                  
+                  <td colSpan="3" className="py-4 px-3 text-slate-400 font-normal text-right">
+                    Brüt Ciro: <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{totalGrossSale.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</span>
+                  </td>
 
-                <td></td>
-              </tr>
+                  <td className="py-4 px-3 text-blue-600 dark:text-blue-400 text-sm font-mono border-r border-slate-200 dark:border-slate-800">
+                    {totalHakedis.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </td>
+
+                  <td className="py-4 px-3 text-purple-600 dark:text-purple-300 font-mono">
+                    {totalNetVat.toFixed(2)} ₺
+                  </td>
+
+                  <td className="py-4 px-3 text-purple-600 dark:text-purple-300 font-mono">
+                    {totalIncomeTax.toFixed(2)} ₺
+                  </td>
+
+                  <td className="py-4 px-3 text-purple-600 dark:text-purple-400 text-sm font-mono border-r border-slate-200 dark:border-slate-800">
+                    {totalPartnerShare.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </td>
+
+                  <td className="py-4 px-3 text-emerald-600 dark:text-emerald-400 text-base font-black font-mono">
+                    {totalReceivable.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </td>
+
+                  <td className="py-4 px-3 text-cyan-600 dark:text-cyan-400 text-base font-black font-mono border-r border-slate-200 dark:border-slate-800">
+                    {totalNetProfit.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+                  </td>
+
+                  <td></td>
+                </tr>
+              )}
             </tfoot>
           </table>
         </div>
