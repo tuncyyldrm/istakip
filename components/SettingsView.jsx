@@ -11,11 +11,20 @@ import {
   Layers,
   Lock,
   KeyRound,
-  ShieldCheck
+  ShieldCheck,
+  Download
 } from 'lucide-react';
 import { resetDatabase, updateSettings, changePassword } from '@/lib/api';
 
-export default function SettingsView({ settings, onSettingsUpdated }) {
+export default function SettingsView({ 
+  settings, 
+  onSettingsUpdated,
+  orders = [],
+  inventory = [],
+  cashSessions = [],
+  sales = [],
+  printers = []
+}) {
   const [newCategory, setNewCategory] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
@@ -110,6 +119,25 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
     }
   }
 
+  function handleExportBackup() {
+    const backupData = {
+      backupDate: new Date().toISOString(),
+      orders: orders || [],
+      inventory: inventory || [],
+      cashSessions: cashSessions || [],
+      sales: sales || [],
+      printers: printers || [],
+      settings: settings || {}
+    };
+    const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", jsonStr);
+    downloadAnchor.setAttribute("download", `istakip_tam_yedek_${new Date().toISOString().split("T")[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -121,15 +149,24 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Sistem & Kategori Ayarları</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            İş kategorileri, satış platformları ve şifre/güvenlik yönetimi.
+            İş kategorileri, satış platformları, yedekleme ve şifre/güvenlik yönetimi.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleExportBackup}
+            className="bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-2xs active:scale-95"
+            title="Tüm sipariş, envanter, kasa ve finans verilerini tek tıkla JSON dosyası olarak indir"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Tüm Verileri Yedekle (JSON)</span>
+          </button>
+
           <button
             onClick={handleResetData}
             disabled={isResetting}
-            className="bg-red-50 hover:bg-red-100 dark:bg-red-600/20 dark:hover:bg-red-600/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5"
+            className="bg-red-50 hover:bg-red-100 dark:bg-red-600/20 dark:hover:bg-red-600/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 active:scale-95"
             title="Google Sheets verilerini yeniden yükle"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -150,7 +187,7 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm transition-colors">
           <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800 mb-4">
             <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+              <KeyRound className="w-4 h-4 text-orange-600 dark:text-orange-400" />
               <span>Giriş Şifresini Değiştir</span>
             </h3>
             <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
@@ -180,7 +217,7 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
                 placeholder="Mevcut şifreniz (varsayılan: 123456)"
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-orange-500"
                 required
               />
             </div>
@@ -193,7 +230,7 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
                   placeholder="En az 4 karakter"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-orange-500"
                   required
                 />
               </div>
@@ -204,7 +241,7 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
                   placeholder="Yeni şifreyi onaylayın"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:border-orange-500"
                   required
                 />
               </div>
@@ -213,7 +250,7 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
             <button
               type="submit"
               disabled={isChangingPass}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2.5 rounded-xl shadow-md shadow-blue-600/25 transition active:scale-98 disabled:opacity-50"
+              className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs py-2.5 rounded-xl shadow-md shadow-orange-600/25 transition active:scale-98 disabled:opacity-50"
             >
               {isChangingPass ? 'Güncelleniyor...' : 'Yeni Şifreyi Kaydet'}
             </button>
@@ -224,7 +261,7 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm transition-colors">
           <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800 mb-4">
             <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
-              <Tag className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <Tag className="w-4 h-4 text-orange-600 dark:text-orange-400" />
               <span>İş & Ürün Kategorileri</span>
             </h3>
             <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{categories.length} Kategori</span>
@@ -236,11 +273,11 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
               placeholder="Yeni kategori adı (Örn: mimari-maket, figür-anime...)"
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
-              className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500"
+              className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
             />
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1 active:scale-95"
+              className="bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1 active:scale-95"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Ekle</span>
@@ -270,7 +307,7 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
         <div className="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 space-y-4 shadow-sm transition-colors">
           <div className="pb-3 border-b border-gray-100 dark:border-gray-800">
             <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
-              <Layers className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <Layers className="w-4 h-4 text-orange-600 dark:text-orange-400" />
               <span>Aktif Satış Platformları</span>
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -290,8 +327,8 @@ export default function SettingsView({ settings, onSettingsUpdated }) {
             ))}
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-500/30 rounded-2xl p-4 text-xs text-gray-700 dark:text-gray-300">
-            <span className="font-bold text-blue-700 dark:text-cyan-400 block mb-1">Turso Cloud & Vercel Güvencesi:</span>
+          <div className="bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/80 dark:border-orange-500/30 rounded-2xl p-4 text-xs text-gray-700 dark:text-gray-300">
+            <span className="font-bold text-orange-600 dark:text-orange-400 block mb-1">Turso Cloud & Vercel Güvencesi:</span>
             <p>
               Bu sistem Google Sheets tablonuzdaki 5 sayfayı (<code>Sipariş</code>, <code>tanımlar</code>, <code>ayarlar</code>, <code>trendyol satış</code>, <code>Nakit Kasa</code>) Turso Serverless SQLite veritabanına bağlamıştır. Vercel üzerinde %100 kalıcıdır ve şifre korumalıdır.
             </p>

@@ -22,7 +22,10 @@ import {
   Image as ImageIcon,
   Maximize2,
   Upload,
-  Camera
+  Camera,
+  Percent,
+  Droplets,
+  RotateCcw
 } from 'lucide-react';
 
 export default function InventoryView({
@@ -83,6 +86,9 @@ export default function InventoryView({
     const price = Number(item.unitPrice) || 0;
     if (item.category === 'filament') {
       return acc + (price * (qty / 1000));
+    }
+    if (item.unit === '%' || item.unit === 'yüzde') {
+      return acc + (price * (qty / 100));
     }
     return acc + (price * qty);
   }, 0);
@@ -627,6 +633,7 @@ export default function InventoryView({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredItems.map((item) => {
             const isFilament = item.category === 'filament';
+            const isPercentage = item.unit === '%' || item.unit === 'yüzde';
             const isLow = item.minThreshold > 0 && item.quantity <= item.minThreshold;
             
             // Percentage for filament spools (standard 1kg = 1000g)
@@ -662,6 +669,16 @@ export default function InventoryView({
                           style={{ backgroundColor: getColorDot(item.color) }}
                           title={`Renk: ${item.color}`}
                         />
+                      ) : isPercentage ? (
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 border border-emerald-500/20">
+                          {item.name?.toLowerCase().includes('yap') ? (
+                            <Droplets className="w-4 h-4" />
+                          ) : item.name?.toLowerCase().includes('bant') ? (
+                            <Layers className="w-4 h-4" />
+                          ) : (
+                            <Percent className="w-4 h-4" />
+                          )}
+                        </div>
                       ) : item.category === 'packaging' ? (
                         <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 shrink-0">
                           <Box className="w-4 h-4" />
@@ -703,14 +720,50 @@ export default function InventoryView({
                   {/* Quantity Display */}
                   <div className="bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 my-2">
                     <div className="flex items-baseline justify-between">
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Mevcut Miktar:</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                        {isPercentage ? 'Kalan Seviye / Doluluk:' : 'Mevcut Miktar:'}
+                      </span>
                       <div className="flex items-baseline gap-1">
                         <span className="text-xl font-bold font-mono text-slate-900 dark:text-white">
-                          {item.quantity}
+                          {isPercentage ? `%${item.quantity}` : item.quantity}
                         </span>
-                        <span className="text-xs text-slate-500 font-medium">{item.unit}</span>
+                        {!isPercentage && (
+                          <span className="text-xs text-slate-500 font-medium">{item.unit}</span>
+                        )}
                       </div>
                     </div>
+
+                    {/* Progress bar for Percentage-based consumables (Hızlı Yapıştırıcı, Bant vb.) */}
+                    {isPercentage && (
+                      <div className="mt-2.5 space-y-1">
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                          <span className="font-semibold text-slate-600 dark:text-slate-300">
+                            {item.quantity === 0
+                              ? 'Tükendi (%0)'
+                              : item.quantity <= (item.minThreshold || 20)
+                                ? 'Kritik Seviye'
+                                : item.quantity > 50
+                                  ? 'Dolu / Yeterli'
+                                  : 'Kullanımda'}
+                          </span>
+                          <span className="font-bold text-slate-700 dark:text-slate-200">
+                            %{item.quantity} / %100
+                          </span>
+                        </div>
+                        <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              item.quantity <= (item.minThreshold || 20)
+                                ? 'bg-rose-500'
+                                : item.quantity <= 50
+                                  ? 'bg-amber-500'
+                                  : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${Math.min(100, Math.max(0, item.quantity))}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {/* Progress bar for Filament Spools */}
                     {isFilament && percent !== null && (
@@ -735,7 +788,7 @@ export default function InventoryView({
                   {isLow && (
                     <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-2.5 py-1 rounded-lg mb-2">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Kritik Eşik: {item.minThreshold} {item.unit} kaldı!</span>
+                      <span>Kritik Eşik: {isPercentage ? `%${item.minThreshold}` : `${item.minThreshold} ${item.unit}`} kaldı!</span>
                     </div>
                   )}
 
@@ -775,6 +828,66 @@ export default function InventoryView({
                           +50g
                         </button>
                       </>
+                    ) : isPercentage ? (
+                      <div className="flex flex-col gap-1.5 w-full">
+                        {/* Row 1: Harcama / Tüketim Butonları (-%1, -%5, -%10, -%25) */}
+                        <div className="flex items-center gap-1 w-full">
+                          <button
+                            onClick={() => onAdjustQuantity(item.id, -1)}
+                            className="flex-1 py-1.5 px-1 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-mono font-bold transition active:scale-95 text-center border border-rose-200/50 dark:border-rose-800/40"
+                            title="%1 harca (rötuş / küçük montaj)"
+                          >
+                            -%1
+                          </button>
+                          <button
+                            onClick={() => onAdjustQuantity(item.id, -5)}
+                            className="flex-1 py-1.5 px-1 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-mono font-bold transition active:scale-95 text-center border border-rose-200/50 dark:border-rose-800/40"
+                            title="%5 harca (standart yapıştırma/kullanım)"
+                          >
+                            -%5
+                          </button>
+                          <button
+                            onClick={() => onAdjustQuantity(item.id, -10)}
+                            className="flex-1 py-1.5 px-1 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-mono font-bold transition active:scale-95 text-center border border-rose-200/50 dark:border-rose-800/40"
+                            title="%10 harca (yoğun kullanım)"
+                          >
+                            -%10
+                          </button>
+                          <button
+                            onClick={() => onAdjustQuantity(item.id, -25)}
+                            className="flex-1 py-1.5 px-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-mono font-bold transition active:scale-95 text-center"
+                            title="%25 harca (çeyrek şişe/rulo)"
+                          >
+                            -%25
+                          </button>
+                        </div>
+
+                        {/* Row 2: Ekleme & Yenileme (+%5, +%10, Yeni Aç %100) */}
+                        <div className="flex items-center gap-1 w-full text-[11px]">
+                          <button
+                            onClick={() => onAdjustQuantity(item.id, 5)}
+                            className="flex-1 py-1 px-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono font-semibold transition active:scale-95 text-center"
+                            title="Düzeltme / Ekleme (%5)"
+                          >
+                            +%5
+                          </button>
+                          <button
+                            onClick={() => onAdjustQuantity(item.id, 10)}
+                            className="flex-1 py-1 px-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono font-semibold transition active:scale-95 text-center"
+                            title="Düzeltme / Ekleme (%10)"
+                          >
+                            +%10
+                          </button>
+                          <button
+                            onClick={() => onAdjustQuantity(item.id, { quantity: 100 })}
+                            className="flex-[1.6] py-1 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-semibold transition active:scale-95 text-center border border-emerald-200/50 dark:border-emerald-800/40 flex items-center justify-center gap-1"
+                            title="Yeni kutu/şişe/rulo açıldığında %100 yapar"
+                          >
+                            <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span>Yeni Aç (%100)</span>
+                          </button>
+                        </div>
+                      </div>
                     ) : (
                       <>
                         <button
@@ -954,11 +1067,12 @@ export default function InventoryView({
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold block mb-1">
-                    Mevcut Miktar
+                    {formData.unit === '%' ? 'Kalan Seviye (%)' : 'Mevcut Miktar'}
                   </label>
                   <input
                     type="number"
                     min="0"
+                    max={formData.unit === '%' ? 100 : undefined}
                     step="any"
                     value={formData.quantity}
                     onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
@@ -976,17 +1090,58 @@ export default function InventoryView({
                 </div>
                 <div>
                   <label className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold block mb-1">
-                    Kritik Eşik
+                    {formData.unit === '%' ? 'Kritik Eşik (%)' : 'Kritik Eşik'}
                   </label>
                   <input
                     type="number"
                     min="0"
+                    max={formData.unit === '%' ? 100 : undefined}
                     value={formData.minThreshold}
                     onChange={(e) => setFormData({ ...formData, minThreshold: Number(e.target.value) })}
                     className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono"
                   />
                 </div>
               </div>
+
+              {/* Quick Unit Presets */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] text-slate-400 font-medium mr-1">Hazır Birimler:</span>
+                {['%', 'adet', 'gr', 'metre', 'litre'].map((u) => {
+                  const isSelected = formData.unit === u;
+                  return (
+                    <button
+                      key={u}
+                      type="button"
+                      onClick={() => {
+                        const isPct = u === '%';
+                        setFormData(prev => ({
+                          ...prev,
+                          unit: u,
+                          quantity: isPct && (prev.quantity === 0 || prev.quantity > 100) ? 100 : prev.quantity,
+                          minThreshold: isPct && prev.minThreshold < 10 ? 20 : prev.minThreshold
+                        }));
+                      }}
+                      className={`text-[10px] px-2 py-0.5 rounded-lg font-mono font-semibold transition ${
+                        isSelected
+                          ? 'bg-orange-600 text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {u === '%' ? '% Yüzde (Yapıştırıcı/Bant)' : u}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Helper notification for percentage items */}
+              {formData.unit === '%' && (
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                  <Percent className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>
+                    <strong>Yüzdelik Takip Aktif:</strong> Kalan oran %100 - %0 arası takip edilir. Kart üzerinde tek tıkla -%1, -%5, -%10 harcama ve &quot;Yeni Aç (%100)&quot; butonları görünür.
+                  </span>
+                </div>
+              )}
 
               {/* Unit Price & Location */}
               <div className="grid grid-cols-2 gap-3">

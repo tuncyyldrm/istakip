@@ -371,7 +371,7 @@ export default function OrdersView({
             return (
               <div 
                 key={col.id} 
-                className="w-[305px] min-w-[290px] max-w-[340px] flex-shrink-0 flex flex-col bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3 min-h-[500px] transition-colors"
+                className="w-[260px] sm:w-[275px] min-w-[245px] flex-shrink-0 lg:flex-1 lg:min-w-[240px] lg:max-w-[320px] flex flex-col bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3 min-h-[500px] transition-colors"
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-200 dark:border-slate-800">
@@ -524,11 +524,11 @@ export default function OrdersView({
                               {next ? (
                                 <button
                                   onClick={() => onUpdateOrderStatus(order.id, next)}
-                                  className="text-[10px] bg-orange-600 hover:bg-orange-500 text-white font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 transition shadow-xs active:scale-95 whitespace-nowrap"
+                                  className="text-[10px] bg-orange-600 hover:bg-orange-500 text-white font-bold px-2 py-1 rounded-lg flex items-center gap-1 transition shadow-xs active:scale-95 whitespace-nowrap"
                                   title={`İlerle: ${next}`}
                                 >
-                                  <span className="truncate max-w-[90px]">{next}</span>
-                                  <ChevronRight className="w-3 h-3" />
+                                  <span>{next === 'Kargolandı / Teslim' ? 'Kargola / Teslim' : next === 'Baskıda' ? 'Baskıya Ver' : next}</span>
+                                  <ChevronRight className="w-3 h-3 shrink-0" />
                                 </button>
                               ) : (
                                 <span className="text-[10px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 border border-emerald-500/25">

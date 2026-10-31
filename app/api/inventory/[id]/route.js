@@ -78,15 +78,29 @@ export async function PATCH(request, { params }) {
     const body = await request.json();
     const updatedAt = new Date().toISOString();
 
+    const checkRes = await db.execute({ sql: "SELECT unit FROM inventory_items WHERE id = ?;", args: [id] });
+    const currentItem = checkRes.rows[0];
+    const isPercent = currentItem && (currentItem.unit === '%' || currentItem.unit === 'yüzde');
+
     if (body.delta !== undefined) {
-      await db.execute({
-        sql: `UPDATE inventory_items SET quantity = MAX(0, quantity + ?), updated_at = ? WHERE id = ?;`,
-        args: [Number(body.delta), updatedAt, id]
-      });
+      const deltaNum = Number(body.delta) || 0;
+      if (isPercent) {
+        await db.execute({
+          sql: `UPDATE inventory_items SET quantity = MIN(100, MAX(0, ROUND(quantity + ?, 2))), updated_at = ? WHERE id = ?;`,
+          args: [deltaNum, updatedAt, id]
+        });
+      } else {
+        await db.execute({
+          sql: `UPDATE inventory_items SET quantity = MAX(0, ROUND(quantity + ?, 2)), updated_at = ? WHERE id = ?;`,
+          args: [deltaNum, updatedAt, id]
+        });
+      }
     } else if (body.quantity !== undefined) {
+      const qtyNum = Number(body.quantity) || 0;
+      const finalQty = isPercent ? Math.min(100, Math.max(0, qtyNum)) : Math.max(0, qtyNum);
       await db.execute({
-        sql: `UPDATE inventory_items SET quantity = MAX(0, ?), updated_at = ? WHERE id = ?;`,
-        args: [Number(body.quantity), updatedAt, id]
+        sql: `UPDATE inventory_items SET quantity = ?, updated_at = ? WHERE id = ?;`,
+        args: [finalQty, updatedAt, id]
       });
     }
 
@@ -107,6 +121,7 @@ export async function PATCH(request, { params }) {
       unitPrice: Number(r.unit_price) || 0,
       location: r.location,
       notes: r.notes,
+      image: r.image || null,
       updatedAt: r.updated_at
     };
 

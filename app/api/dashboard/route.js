@@ -52,13 +52,25 @@ export async function GET() {
 
     // Fetch cash sessions
     const cashRes = await db.execute("SELECT * FROM cash_sessions ORDER BY date ASC;");
-    const cash = cashRes.rows.map(r => ({
-      id: r.id,
-      date: r.date,
-      total: r.total,
-      denominations: r.denominations ? JSON.parse(r.denominations) : {},
-      note: r.note
-    }));
+    const cash = cashRes.rows.map(r => {
+      const rawTotal = Number(r.total) || 0;
+      const type = r.type || (rawTotal < 0 ? 'outflow' : 'inflow');
+      let denoms = {};
+      try {
+        denoms = r.denominations ? (typeof r.denominations === 'string' ? JSON.parse(r.denominations) : r.denominations) : {};
+      } catch (e) {
+        denoms = {};
+      }
+      return {
+        id: r.id,
+        date: r.date,
+        total: rawTotal,
+        denominations: denoms,
+        note: r.note || '',
+        type: type,
+        category: r.category || (type === 'outflow' ? 'Masraf / Çıkış' : 'Nakit Tahsilat')
+      };
+    });
 
     // Fetch settings
     const setRes = await db.execute("SELECT value FROM settings WHERE key = 'general';");

@@ -221,7 +221,7 @@ export default function Navbar({
         </div>
 
         {/* Navigation Groups */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-5 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-3.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {navGroups.map((grp, gIdx) => (
             <div key={gIdx} className="space-y-1">
               <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400/80 mb-1.5">

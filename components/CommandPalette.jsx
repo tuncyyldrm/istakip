@@ -32,6 +32,7 @@ export default function CommandPalette({
 
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery('');
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -77,6 +78,15 @@ export default function CommandPalette({
       subtitle: 'Banknot ve madeni para küpür sayımı kaydı',
       icon: Wallet,
       iconColor: 'bg-amber-600 text-white',
+      run: () => { onNavigateTab('cash'); onClose(); }
+    },
+    {
+      id: 'act-cash-outflow',
+      type: 'action',
+      title: 'Nakit Para Çıkışı / Masraf Gir',
+      subtitle: 'Atölye nakit harcaması, kargo veya avans kaydı',
+      icon: Wallet,
+      iconColor: 'bg-rose-600 text-white',
       run: () => { onNavigateTab('cash'); onClose(); }
     }
   ];
@@ -218,7 +228,7 @@ export default function CommandPalette({
         <div className="overflow-y-auto p-2 space-y-1 flex-1 max-h-[60vh] scrollbar-thin">
           {combinedItems.length === 0 ? (
             <div className="p-8 text-center text-slate-400 text-xs">
-              "{query}" ile eşleşen sipariş, stok veya aksiyon bulunamadı.
+              &quot;{query}&quot; ile eşleşen sipariş, stok veya aksiyon bulunamadı.
             </div>
           ) : (
             combinedItems.map((item, idx) => {

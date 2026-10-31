@@ -66,13 +66,25 @@ export async function GET() {
     }));
 
     // Format cash
-    const cashSessions = cashRes.rows.map(r => ({
-      id: r.id,
-      date: r.date,
-      total: r.total,
-      denominations: r.denominations ? JSON.parse(r.denominations) : {},
-      note: r.note
-    }));
+    const cashSessions = cashRes.rows.map(r => {
+      const rawTotal = Number(r.total) || 0;
+      const type = r.type || (rawTotal < 0 ? 'outflow' : 'inflow');
+      let denoms = {};
+      try {
+        denoms = r.denominations ? (typeof r.denominations === 'string' ? JSON.parse(r.denominations) : r.denominations) : {};
+      } catch (e) {
+        denoms = {};
+      }
+      return {
+        id: r.id,
+        date: r.date,
+        total: rawTotal,
+        denominations: denoms,
+        note: r.note || '',
+        type: type,
+        category: r.category || (type === 'outflow' ? 'Masraf / Çıkış' : 'Nakit Tahsilat')
+      };
+    });
 
     // Format settings
     const settings = setRes.rows[0]?.value ? JSON.parse(setRes.rows[0].value) : {};

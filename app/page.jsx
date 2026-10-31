@@ -30,6 +30,7 @@ import {
   deleteTrendyolSale,
   fetchCashRegister,
   createCashSession,
+  updateCashSession,
   deleteCashSession,
   fetchSettings,
   fetchInventory,
@@ -384,7 +385,8 @@ export default function Home() {
       if (res.success) {
         setCashSessions([...cashSessions, res.data]);
         refreshDashboard();
-        showToast('Kasa sayımı başarıyla kaydedildi', 'success');
+        const msg = sessionData.type === 'outflow' ? 'Nakit çıkışı kasadan düşüldü' : 'Kasa sayımı başarıyla kaydedildi';
+        showToast(msg, 'success');
       }
     } catch (err) {
       console.error(err);
@@ -392,14 +394,28 @@ export default function Home() {
     }
   }
 
+  async function handleUpdateCashSession(id, sessionData) {
+    try {
+      const res = await updateCashSession(id, sessionData);
+      if (res.success) {
+        setCashSessions(cashSessions.map(c => c.id === id ? res.data : c));
+        refreshDashboard();
+        showToast('Kasa hareketi başarıyla güncellendi', 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Kasa kaydı güncellenemedi', 'error');
+    }
+  }
+
   async function handleDeleteCashSession(id) {
-    if (!window.confirm('Bu sayım kaydını silmek istediğinize emin misiniz?')) return;
+    if (!window.confirm('Bu kasa hareketini silmek istediğinize emin misiniz?')) return;
     try {
       const res = await deleteCashSession(id);
       if (res.success) {
         setCashSessions(cashSessions.filter(c => c.id !== id));
         refreshDashboard();
-        showToast('Kasa sayım kaydı silindi', 'warning');
+        showToast('Kasa hareketi silindi', 'warning');
       }
     } catch (err) {
       console.error(err);
@@ -446,13 +462,20 @@ export default function Home() {
     }
   }
 
-  async function handleAdjustInventoryQuantity(id, delta) {
+  async function handleAdjustInventoryQuantity(id, deltaOrPayload) {
     try {
-      const res = await adjustInventoryQuantity(id, delta);
+      const res = await adjustInventoryQuantity(id, deltaOrPayload);
       if (res.success) {
         setInventory(inventory.map(item => item.id === id ? { ...item, ...res.data } : item));
-        const sign = delta > 0 ? `+${delta}` : `${delta}`;
-        showToast(`Stok miktarı güncellendi (${sign})`, 'info');
+        let message = 'Stok miktarı güncellendi';
+        if (typeof deltaOrPayload === 'object' && deltaOrPayload.quantity !== undefined) {
+          message = `Seviye %${deltaOrPayload.quantity} olarak ayarlandı`;
+        } else if (typeof deltaOrPayload === 'number') {
+          const sign = deltaOrPayload > 0 ? `+${deltaOrPayload}` : `${deltaOrPayload}`;
+          const isPercent = res.data?.unit === '%' || res.data?.unit === 'yüzde';
+          message = isPercent ? `Seviye güncellendi (${sign}%)` : `Stok miktarı güncellendi (${sign})`;
+        }
+        showToast(message, 'info');
       }
     } catch (err) {
       console.error(err);
@@ -630,6 +653,7 @@ export default function Home() {
               <CashRegisterView
                 cashSessions={cashSessions}
                 onAddCashSession={handleAddCashSession}
+                onUpdateCashSession={handleUpdateCashSession}
                 onDeleteCashSession={handleDeleteCashSession}
               />
             )}
@@ -638,6 +662,11 @@ export default function Home() {
               <SettingsView
                 settings={settings}
                 onSettingsUpdated={handleSettingsUpdated}
+                orders={orders}
+                inventory={inventory}
+                cashSessions={cashSessions}
+                sales={sales}
+                printers={printers}
               />
             )}
           </>
